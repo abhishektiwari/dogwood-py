@@ -76,10 +76,12 @@ jobs:
           PY
           )
 
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "version_tag=${VERSION_TAG}" >> "$GITHUB_OUTPUT"
-          echo "github_tag=${GITHUB_TAG}" >> "$GITHUB_OUTPUT"
-          echo "is_prerelease=${IS_PRERELEASE}" >> "$GITHUB_OUTPUT"
+          {
+            echo "version=${VERSION}"
+            echo "version_tag=${VERSION_TAG}"
+            echo "github_tag=${GITHUB_TAG}"
+            echo "is_prerelease=${IS_PRERELEASE}"
+          } >> "$GITHUB_OUTPUT"
 
   build-sdist:
     name: Build source distribution
@@ -290,7 +292,7 @@ jobs:
   publish-pypi:
     name: Publish to PyPI
     needs: [generate-version, build-sdist, build-wheels]
-    if: vars.PUBLISH_PYPI == 'true' && ((github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
