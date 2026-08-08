@@ -1,9 +1,19 @@
 # Dogwood Policy Python SDK
 
-Python SDK and PyO3 binding for the [Dogwood](https://github.com/dogwood-policy/dogwood) policy language.
+Python SDK and PyO3 binding for the [Dogwood](https://github.com/dogwood-policy/dogwood) policy language. Dogwood is a policy language for fine-grained authorization decisions that depend on history or patterns of events over time - not just a single request. It adds temporal conditions (since, formerly, once, aggregations) and information providers (computed guardrail facts) on top of Cedar policy syntax, then lowers everything back to Cedar for evaluation. Existing Cedar policies stay valid as-is.
 
-Dogwood is a policy language for fine-grained authorization decisions that depend on history or patterns of events over time - not just a single request. It adds temporal conditions (since, formerly, once, aggregations) and information providers (computed guardrail facts) on top of Cedar policy syntax, then lowers everything back to Cedar for evaluation. Existing Cedar policies stay valid as-is.
 
+![GitHub Release](https://img.shields.io/github/v/release/abhishektiwari/dogwood-py)
+![GitHub Actions Test Workflow Status](https://img.shields.io/github/actions/workflow/status/abhishektiwari/dogwood-py/test.yml?label=tests)
+![PyPI - Version](https://img.shields.io/pypi/v/dogwood-py)
+![Python Wheels](https://img.shields.io/pypi/wheel/dogwood-py)
+![Python Versions](https://img.shields.io/pypi/pyversions/dogwood-py?logo=python&logoColor=white)
+![GitHub last commit](https://img.shields.io/github/last-commit/abhishektiwari/dogwood-py)
+![PyPI - Status](https://img.shields.io/pypi/status/dogwood-py)
+![Conda Version](https://img.shields.io/conda/v/dogwood-py/dogwood-py)
+![License](https://img.shields.io/github/license/abhishektiwari/dogwood-py)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/abhishektiwari/dogwood-py/total?label=GitHub%20Downloads)
+![PyPI Downloads](https://img.shields.io/pepy/dt/dogwood-py?label=PyPI%20Downloads)
 
 The public API is modeled after the Rust `dogwood-language` lifecycle:
 
@@ -26,15 +36,6 @@ The project uses a local `.venv` and maturin editable installs:
 make setup
 make develop
 make test
-```
-
-Equivalent commands:
-
-```bash
-python -m venv .venv
-.venv/bin/python -m pip install -U pip maturin pytest
-.venv/bin/maturin develop
-.venv/bin/python -m pytest -q
 ```
 
 The native extension imports as `dogwood._dogwood_native`; convenience wrappers
