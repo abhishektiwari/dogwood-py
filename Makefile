@@ -23,7 +23,8 @@ help:
 
 setup:
 	$(PYTHON) -m venv $(VENV)
-	$(VENV_PYTHON) -m pip install -U pip maturin pytest 'setuptools-scm[toml]'
+	$(VENV_PYTHON) -m pip install -U pip
+	$(VENV_PYTHON) -m pip install -e '.[dev]'
 
 develop: setup
 	$(MATURIN) develop

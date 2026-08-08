@@ -28,12 +28,12 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
       - name: Clean up old PR pre-releases
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         env:
           DAYS_TO_KEEP: ${{ github.event.inputs.days_to_keep || '7' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
