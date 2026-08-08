@@ -285,8 +285,14 @@ jobs:
           fi
 
           gh release create "$GITHUB_TAG" dist/* \
-            --title "dogwood-py ${VERSION} build ${GITHUB_RUN_NUMBER}" \
-            --notes "Automated build from ${GITHUB_SHA}." \
+            --title "${VERSION}" \
+            --notes "Automated dogwood-py release.
+
+          Version: ${VERSION}
+          Tag: ${GITHUB_TAG}
+          Build: ${GITHUB_RUN_NUMBER}
+          Commit: ${GITHUB_SHA}
+          Prerelease: ${IS_PRERELEASE}" \
             $PRERELEASE_FLAG
 
   publish-pypi:
