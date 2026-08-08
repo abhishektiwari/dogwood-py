@@ -1,0 +1,19 @@
+@id("daily_transfer_limit")
+permit (
+    principal,
+    action == Drupe::Action::"Transfer",
+    resource
+)
+when temporal {
+    exists (total: Long). (
+        (sum_within(
+            amount,
+            1d,
+            Drupe::Action::"Transfer"::request{
+                input.user: context.input.user,
+                input.amount: amount
+            }
+        )) == total
+        && total <= 50
+    )
+};

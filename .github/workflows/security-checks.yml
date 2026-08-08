@@ -1,0 +1,90 @@
+name: Security Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: Actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Download actionlint
+        run: bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
+      - name: Run actionlint
+        run: ./actionlint -color
+
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+
+  hidden-unicode-scan:
+    name: Hidden Unicode Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan changed text files
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            mapfile -t CHANGED < <(git diff --name-only --diff-filter=ACM "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" -- '*.md' '*.rst' '*.txt' '*.py' '*.rs' '*.toml' '*.yml' '*.yaml')
+          else
+            mapfile -t CHANGED < <(git ls-files '*.md' '*.rst' '*.txt' '*.py' '*.rs' '*.toml' '*.yml' '*.yaml')
+          fi
+          if [ ${#CHANGED[@]} -eq 0 ]; then
+            echo "No text files to scan."
+            exit 0
+          fi
+          python3 .github/scripts/scan_hidden_unicode.py "${CHANGED[@]}"
+
+  flag-workflow-changes:
+    name: Flag Workflow File Changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check for workflow changes
+        shell: bash
+        run: |
+          CHANGED=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" -- .github/workflows/)
+          if [ -n "$CHANGED" ]; then
+            {
+              echo "## Workflow files changed"
+              echo "Review these CI/CD changes carefully before merge."
+              echo '```'
+              echo "$CHANGED"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::This PR modifies .github/workflows files."
+          else
+            echo "No workflow file changes detected."
+          fi

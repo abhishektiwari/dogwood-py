@@ -1,0 +1,44 @@
+namespace Drupe {
+  type SellSharesInput = {
+    shares: Long,
+    stock: String
+  };
+
+  type SellSharesOutput = {
+    proceeds: decimal
+  };
+
+  type SystemContext = {
+    now: datetime
+  };
+
+  entity Gateway;
+
+  entity IamEntity = {
+    id: String
+  };
+
+  entity OAuthUser = {
+    id: String
+  } tags String;
+
+  entity UnauthenticatedUser;
+
+  action "CallTool" appliesTo {
+    principal: [OAuthUser, IamEntity, UnauthenticatedUser],
+    resource: [Gateway],
+    context: {
+      system: SystemContext
+    }
+  };
+
+  action "SellShares" in [Action::"CallTool"] appliesTo {
+    principal: [IamEntity, OAuthUser, UnauthenticatedUser],
+    resource: [Gateway],
+    context: {
+      input: SellSharesInput,
+      output?: SellSharesOutput,
+      system: SystemContext
+    }
+  };
+}
