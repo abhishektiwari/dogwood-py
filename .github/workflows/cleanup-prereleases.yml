@@ -1,0 +1,116 @@
+name: Cleanup Pre-releases
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC.
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      days_to_keep:
+        description: "Number of days to keep PR pre-releases"
+        required: false
+        default: "7"
+        type: string
+      dry_run:
+        description: "Report matching pre-releases without deleting them"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Clean up old PR pre-releases
+        uses: actions/github-script@v7
+        env:
+          DAYS_TO_KEEP: ${{ github.event.inputs.days_to_keep || '7' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        with:
+          script: |
+            const daysToKeep = Number.parseInt(process.env.DAYS_TO_KEEP, 10);
+            if (!Number.isInteger(daysToKeep) || daysToKeep < 0) {
+              core.setFailed(`Invalid days_to_keep value: ${process.env.DAYS_TO_KEEP}`);
+              return;
+            }
+
+            const dryRun = process.env.DRY_RUN === "true";
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+            const prPrereleaseTag = /^v\d+\.\d+\.\d+-pr\d+\.\d+\.\d+$/;
+            console.log(
+              `Cleaning up PR pre-releases older than ${daysToKeep} days ` +
+              `(before ${cutoffDate.toISOString()}); dry_run=${dryRun}`
+            );
+
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+
+            let deletedCount = 0;
+            let matchedCount = 0;
+
+            for (const release of releases) {
+              if (!release.prerelease || !prPrereleaseTag.test(release.tag_name)) {
+                continue;
+              }
+
+              matchedCount++;
+              const releaseDate = new Date(release.created_at);
+
+              if (releaseDate >= cutoffDate) {
+                console.log(`Keeping: ${release.tag_name} (created: ${releaseDate.toISOString()})`);
+                continue;
+              }
+
+              console.log(`Deleting: ${release.tag_name} (created: ${releaseDate.toISOString()})`);
+
+              if (dryRun) {
+                continue;
+              }
+
+              try {
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id,
+                });
+
+                try {
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `tags/${release.tag_name}`,
+                  });
+                } catch (error) {
+                  if (error.status !== 404) {
+                    throw error;
+                  }
+                  console.log(`Tag already missing: ${release.tag_name}`);
+                }
+
+                deletedCount++;
+                console.log(`Deleted: ${release.tag_name}`);
+              } catch (error) {
+                core.warning(`Failed to delete ${release.tag_name}: ${error.message}`);
+              }
+            }
+
+            console.log(
+              `Cleanup complete. Matched ${matchedCount} PR pre-releases; ` +
+              `deleted ${deletedCount}.`
+            );

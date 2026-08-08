@@ -23,7 +23,7 @@ help:
 
 setup:
 	$(PYTHON) -m venv $(VENV)
-	$(VENV_PYTHON) -m pip install -U pip maturin pytest
+	$(VENV_PYTHON) -m pip install -U pip maturin pytest 'setuptools-scm[toml]'
 
 develop: setup
 	$(MATURIN) develop
@@ -55,5 +55,6 @@ sdist:
 clean:
 	rm -rf .pytest_cache
 	rm -rf src/dogwood/__pycache__ tests/__pycache__
+	rm -f src/dogwood/_version.py
 	rm -rf rust/target
 	rm -rf build dist *.egg-info

@@ -1,5 +1,12 @@
 """Python SDK for the Dogwood policy language."""
 
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "0.0.0+unknown"
+
+__author__ = "Abhishek Tiwari"
+
 from .errors import DogwoodError, ParseError, UnsupportedFeatureError, ValidationError
 from .policy import (
     LoweredPolicySet,
@@ -44,6 +51,8 @@ __all__ = [
     "ValidationResult",
     "Validator",
     "Value",
+    "__author__",
+    "__version__",
     "parse_trace",
     "replay_log",
 ]
