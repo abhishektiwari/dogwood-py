@@ -84,7 +84,7 @@ html_theme_options = {
     ],
 }
 
-html_title = "dogwood-py - Python SDK for Dogwood Policy"
+html_title = "dogwood-py: Python SDK for Dogwood Policy"
 html_short_title = project
 htmlhelp_basename = "dogwoodpydoc"
 html_meta = {
