@@ -1,0 +1,31 @@
+namespace Drupe {
+  type ShoppingToolArgs = {
+    user: String,
+    session_id: String,
+    cart_id: String,
+    item_id: String,
+    category: String,
+    amount: Long,
+    quantity: Long,
+    risk: Long,
+    status: String
+  };
+
+  type CallToolInput = {
+    tool: String,
+    input: ShoppingToolArgs,
+    toolUseId: String
+  };
+
+  entity Gateway;
+
+  entity OAuthUser;
+
+  action "CallTool" appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: CallToolInput
+    }
+  };
+}

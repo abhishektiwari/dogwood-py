@@ -1,0 +1,48 @@
+# Shopping Agent Policies
+
+Framework-neutral Dogwood policies for a shopping agent. These files model
+agent tool calls as `Drupe::Action::"CallTool"` request events with a nested
+tool input payload:
+
+```json
+{
+  "tool": "checkout_cart",
+  "input": {
+    "user": "alice",
+    "session_id": "session-1",
+    "cart_id": "cart-1",
+    "item_id": "iphone17",
+    "category": "high-end-smartphone",
+    "amount": 1299,
+    "quantity": 1,
+    "risk": 100,
+    "status": "requested"
+  },
+  "toolUseId": "tool-use-1"
+}
+```
+
+The shape matches the default `dogwood-py` Strands adapter, but the policy
+files are not Strands-specific and can be reused by future LangChain, CrewAI,
+or other agent framework adapters.
+
+`event.dwschema` defines the Dogwood event model used by these policies. In the
+current SDK, tool calls are modeled as `CallTool::request` decision events and
+successful checkout is represented by `input.input.status == "completed"`.
+
+## Policies
+
+| Policy | Agent behavior | Temporal condition | Example outcome |
+| --- | --- | --- | --- |
+| `daily_budget.dw` | Limits successful checkout spend. | Sum same-user successful `checkout_cart` records with `status == "completed"` within 1 day and allow only while total is `<= 50`. | Failed/blocked checkout attempts do not consume budget; completed `$20`, `$20`, `$20` orders -> Allow, Allow, Deny. |
+| `daily_order_quota.dw` | Limits order frequency. | Count same-user successful `checkout_cart` records with `status == "completed"` within 1 day and allow fewer than 3. | Failed/blocked checkout attempts do not consume quota; completed orders do. |
+| `approval_gate.dw` | Requires explicit approval before `checkout_cart`. | Same user and cart must have an `approve_checkout` event with `status == "approved"` within 1 hour. | Checkout before approval denies; checkout after approval allows. |
+| `item_risk_guardrail.dw` | Requires step-up user approval for risky items before add or checkout. | Agent/framework enriches input from `products.json`, then maps product category to `risk` through `risk-mapping.json`; `add_to_cart` and `checkout_cart` are allowed when `risk <= 50` or after a recent `approve_step_up` event for the same user/cart/item. | Book add/checkout allows; iPhone 17 add denies until step-up approval, then allows. |
+| `session_access.dw` | Enforces grant/revoke session access. | Tool calls require a same-user/session `grant_session` within 1 hour with no later `revoke_session`. | Search before grant denies; after grant allows; after revoke denies. |
+| `tool_sequence.dw` | Requires cart context before purchase. | `checkout_cart` requires a same-user/cart `add_to_cart` for the same item within 1 hour. | Checkout before add-to-cart denies; checkout after add-to-cart allows. |
+| `session_login.dw` | Requires an authenticated agent session. | Tool calls require a same-user/session `login` within 1 hour. | Search before login denies; after login allows. |
+
+These files intentionally contain only policies, the Cedar action schema, the
+Dogwood event schema, and shared policy data. The Strands example in
+`examples/strands_shopping_agent` loads and executes them with Dogwood
+interventions.

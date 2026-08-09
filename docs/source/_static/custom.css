@@ -1,0 +1,8 @@
+/* Custom styles for dogwood-py documentation */
+a.image-reference {
+    text-decoration: none;
+}
+
+.bd-header {
+    background-color: #343131;
+}

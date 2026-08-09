@@ -1,3 +1,14 @@
+"""Trace parsing and replay helpers.
+
+Rust mapping:
+
+* :func:`parse_trace` mirrors ``dogwood_language::parse_trace`` for the subset
+  needed by the Python fallback.
+* :func:`replay_log` maps to ``dogwood_language::replay_log`` when a
+  schema-backed ``LoweredPolicySet`` is supplied, otherwise it uses the
+  temporary Python fallback ``Authorizer``.
+"""
+
 from __future__ import annotations
 
 import re
@@ -9,6 +20,10 @@ from .values import Entity, Event
 
 
 def parse_trace(log: str) -> list[Event]:
+    """Parse Dogwood trace log text into ``Event`` objects.
+
+    Rust mapping: ``dogwood_language::parse_trace``.
+    """
     events = []
     for line_no, raw in enumerate(log.splitlines(), 1):
         line = raw.strip()
@@ -22,13 +37,24 @@ def parse_trace(log: str) -> list[Event]:
 
 
 def replay_log(policies: Any, log: str) -> str:
+    """Replay a trace against a policy set and return CLI-style verdict lines.
+
+    Rust mapping: ``dogwood_language::replay_log`` for schema-backed native
+    policy sets. The fallback path feeds parsed events into
+    ``dogwood.values.Authorizer``.
+    """
     if (
         hasattr(policies, "source")
         and hasattr(policies, "policy_schema")
         and policies.policy_schema.source.strip()
     ):
         native.require_available()
-        return native.replay(policies.source, policies.policy_schema.source, log)
+        return native.replay(
+            policies.source,
+            policies.policy_schema.source,
+            log,
+            policies.parsed.service_schema.event_schema,
+        )
 
     from .values import Authorizer
 

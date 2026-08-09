@@ -1,0 +1,16 @@
+{
+  "book": 10,
+  "stationery": 10,
+  "phone-accessory": 15,
+  "audio": 25,
+  "wearable": 35,
+  "computer": 45,
+  "gaming-console": 55,
+  "premium-fashion": 60,
+  "crypto-hardware": 75,
+  "stored-value": 80,
+  "prepaid-card": 85,
+  "luxury-watch": 90,
+  "designer-bag": 95,
+  "high-end-smartphone": 100
+}

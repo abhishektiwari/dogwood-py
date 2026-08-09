@@ -1,0 +1,58 @@
+{
+  "clean-code-book": {
+    "category": "book",
+    "price": 20
+  },
+  "moleskine-notebook": {
+    "category": "stationery",
+    "price": 18
+  },
+  "iphone17-case": {
+    "category": "phone-accessory",
+    "price": 25
+  },
+  "noise-canceling-headphones": {
+    "category": "audio",
+    "price": 180
+  },
+  "smart-watch-pro": {
+    "category": "wearable",
+    "price": 399
+  },
+  "developer-laptop": {
+    "category": "computer",
+    "price": 1800
+  },
+  "nextgen-console": {
+    "category": "gaming-console",
+    "price": 499
+  },
+  "limited-edition-sneakers": {
+    "category": "premium-fashion",
+    "price": 350
+  },
+  "hardware-crypto-wallet": {
+    "category": "crypto-hardware",
+    "price": 149
+  },
+  "digital-gift-card": {
+    "category": "stored-value",
+    "price": 100
+  },
+  "prepaid-visa-card": {
+    "category": "prepaid-card",
+    "price": 200
+  },
+  "luxury-chronograph": {
+    "category": "luxury-watch",
+    "price": 4000
+  },
+  "designer-tote": {
+    "category": "designer-bag",
+    "price": 2200
+  },
+  "iphone17": {
+    "category": "high-end-smartphone",
+    "price": 1299
+  }
+}

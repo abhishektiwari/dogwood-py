@@ -1,0 +1,12 @@
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+{{ super() }}
+<meta property="og:title" content="{{ title|striptags|e }} - dogwood-py" />
+<meta property="og:description" content="dogwood-py is a Python SDK and PyO3 binding for Dogwood, a Cedar-compatible temporal authorization policy language for Python, FastAPI, CLIs, and Strands Agents." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://dogwood-py.abhishek-tiwari.com/" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="{{ title|striptags|e }} - dogwood-py" />
+<meta name="twitter:description" content="Python SDK and native Rust binding for Dogwood temporal authorization policies." />
+{% endblock %}

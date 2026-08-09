@@ -1,3 +1,14 @@
+"""Python policy lifecycle objects modeled after ``dogwood_language``.
+
+The high-level SDK follows the Rust workflow:
+
+``ServiceSchema + PolicySchema -> ParsedPolicySet -> LoweredPolicySet -> Validator``.
+
+When a non-empty Cedar action schema is supplied, operations delegate to the
+native PyO3 binding and therefore to Rust ``dogwood_language``. The pure-Python
+path is a temporary schema-less fallback for simple examples.
+"""
+
 from __future__ import annotations
 
 import re
@@ -11,26 +22,58 @@ from .values import Decision, Diagnostics, DogwoodRuleRef, Response
 
 @dataclass(frozen=True)
 class ServiceSchema:
+    """Dogwood service schema inputs.
+
+    Rust mapping: ``dogwood_language::ServiceSchema``. In Rust this is built
+    with ``ServiceSchema::defaults()`` or ``ServiceSchema::builder()`` and can
+    contain an event-schema DSL, provider declarations, and macro source.
+
+    In dogwood-py, ``event_schema`` is passed through to the native binding as
+    ``ServiceSchema::builder().event_schema_str(...).build()``. ``macros`` and
+    ``providers`` are reserved for future binding support.
+    """
+
     event_schema: str | None = None
     macros: str | None = None
     providers: dict[str, Any] | None = None
 
     @classmethod
     def defaults(cls) -> "ServiceSchema":
+        """Return the default Dogwood service schema.
+
+        Rust mapping: ``ServiceSchema::defaults()``.
+        """
         return cls()
 
 
 @dataclass(frozen=True)
 class PolicySchema:
+    """Cedar action schema text used to lower Dogwood policies.
+
+    Rust mapping: ``dogwood_language::PolicySchema`` constructed with
+    ``PolicySchema::from_cedarschema_str``.
+    """
+
     source: str
 
     @classmethod
     def from_cedarschema_str(cls, source: str) -> "PolicySchema":
+        """Create a policy schema from Cedar ``.cedarschema`` source.
+
+        Rust mapping: ``PolicySchema::from_cedarschema_str(source)``.
+        """
         return cls(source)
 
 
 @dataclass(frozen=True)
 class ParsedPolicy:
+    """Schema-free parsed policy summary.
+
+    Rust mapping: one policy inside ``dogwood_language::ParsedPolicySet``. The
+    Python fallback stores only a lightweight summary; native schema-backed
+    parsing/lowering is handled by Rust.
+    """
+
     id: str
     effect: str
     action: str | None
@@ -48,19 +91,41 @@ class ParsedPolicy:
 
 @dataclass(frozen=True)
 class ParsedPolicySet:
+    """Dogwood policy source after schema-free parse.
+
+    Rust mapping: ``dogwood_language::ParsedPolicySet``. The Rust split is
+    ``ParsedPolicySet::parse(source, &service_schema)`` followed later by
+    ``ParsedPolicySet::lower(&policy_schema)`` when the Cedar action schema is
+    available.
+    """
+
     source: str
     service_schema: ServiceSchema
     _policies: tuple[ParsedPolicy, ...]
 
     @classmethod
     def parse(cls, source: str, service_schema: ServiceSchema | None = None) -> "ParsedPolicySet":
+        """Parse policy source without a Cedar action schema.
+
+        Rust mapping: ``ParsedPolicySet::parse(source, &service_schema)``.
+        """
         service_schema = service_schema or ServiceSchema.defaults()
         return cls(source, service_schema, tuple(_parse_policies(source)))
 
     def lower(self, policy_schema: PolicySchema) -> "LoweredPolicySet":
+        """Lower this parsed policy set against a Cedar action schema.
+
+        Rust mapping: ``ParsedPolicySet::lower(&policy_schema)``.
+        """
         return LoweredPolicySet(self, policy_schema)
 
     def lower_with_distincter(self, policy_schema: PolicySchema, distincter: str) -> "LoweredPolicySet":
+        """Lower with a caller-supplied Cedar identifier namespace.
+
+        Rust mapping: ``ParsedPolicySet::lower_with_distincter``. The current
+        Python fallback uses ``distincter`` for generated fallback Cedar ids;
+        native distincter support is not yet exposed through PyO3.
+        """
         if not re.match(r"^[_A-Za-z][_A-Za-z0-9]*$", distincter):
             raise ParseError(f"invalid distincter {distincter!r}")
         return LoweredPolicySet(self, policy_schema, distincter=distincter)
@@ -74,18 +139,43 @@ class ParsedPolicySet:
 
 @dataclass(frozen=True)
 class ValidationResult:
+    """Validation findings for a lowered policy set.
+
+    Rust mapping: ``dogwood_language::ValidationResult``. Errors make
+    ``validation_passed`` false; warnings are reported separately.
+    """
+
     errors: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
     def validation_passed(self) -> bool:
+        """Return true when validation has no errors.
+
+        Rust mapping: ``ValidationResult::validation_passed()``.
+        """
         return not self.errors
 
 
 class Validator:
+    """Validate a lowered Dogwood policy set.
+
+    Rust mapping: ``dogwood_language::Validator``. Unlike Cedar's validator,
+    Dogwood's Rust ``Validator::new()`` takes no schema because the effective
+    augmented schema travels on ``LoweredPolicySet``.
+    """
+
     def validate(self, policies: "LoweredPolicySet") -> ValidationResult:
+        """Validate policies and return accumulated errors/warnings.
+
+        Rust mapping: ``Validator::new().validate(&policies)``.
+        """
         if policies.policy_schema.source.strip():
             native.require_available()
-            result = native.validate_policy(policies.source, policies.policy_schema.source)
+            result = native.validate_policy(
+                policies.source,
+                policies.policy_schema.source,
+                policies.parsed.service_schema.event_schema,
+            )
             return ValidationResult(tuple(result["errors"]), tuple(result["warnings"]))
         errors: list[str] = []
         if not policies.parsed._policies:
@@ -98,6 +188,14 @@ class Validator:
 
 @dataclass
 class LoweredPolicySet:
+    """Policy set lowered against Dogwood service and Cedar action schemas.
+
+    Rust mapping: ``dogwood_language::LoweredPolicySet``. For schema-backed
+    workflows, construction delegates to Rust ``LoweredPolicySet::from_str``.
+    The lowered set is schema-bound; validation and Cedar export use the same
+    schemas it was lowered against.
+    """
+
     parsed: ParsedPolicySet
     policy_schema: PolicySchema
     distincter: str = "policy"
@@ -109,7 +207,11 @@ class LoweredPolicySet:
         cedar = self._render_cedar()
         if self.policy_schema.source.strip():
             native.require_available()
-            cedar = native.lower_to_cedar(self.parsed.source, self.policy_schema.source)
+            cedar = native.lower_to_cedar(
+                self.parsed.source,
+                self.policy_schema.source,
+                self.parsed.service_schema.event_schema,
+            )
         object.__setattr__(self, "cedar_policies", cedar)
 
     @classmethod
@@ -119,19 +221,42 @@ class LoweredPolicySet:
         service_schema: ServiceSchema | None = None,
         policy_schema: PolicySchema | None = None,
     ) -> "LoweredPolicySet":
+        """Parse and lower policy source in one step.
+
+        Rust mapping: ``LoweredPolicySet::from_str(source, &service_schema,
+        &policy_schema)``. This is the fused parse/lower form.
+        """
         parsed = ParsedPolicySet.parse(source, service_schema or ServiceSchema.defaults())
         return parsed.lower(policy_schema or PolicySchema(""))
 
     def as_cedar(self) -> str:
+        """Return lowered Cedar policy text.
+
+        Rust mapping: ``LoweredPolicySet::as_cedar()`` rendered to text.
+        """
         return self.cedar_policies
 
     def cedar_schema(self) -> str:
+        """Return the augmented Cedar schema text.
+
+        Rust mapping: ``LoweredPolicySet::cedar_schema_str()``.
+        """
         if self.policy_schema.source.strip():
             native.require_available()
-            return native.cedar_schema(self.source, self.policy_schema.source)
+            return native.cedar_schema(
+                self.source,
+                self.policy_schema.source,
+                self.parsed.service_schema.event_schema,
+            )
         return self.policy_schema.source
 
     def is_self_contained_cedar(self) -> bool:
+        """Return whether exported Cedar is self-contained.
+
+        Rust mapping: ``LoweredPolicySet::is_self_contained_cedar()``. Native
+        support is not fully exposed yet; the Python fallback approximates this
+        by checking whether parsed policies contain temporal clauses.
+        """
         return not any(policy.temporal for policy in self.parsed._policies)
 
     def decide(self, event: Any, history: list[Any]) -> Response:

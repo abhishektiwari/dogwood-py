@@ -17,12 +17,14 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("policies")
         if name != "check-parse":
             p.add_argument("--policy-schema", required=True)
+            p.add_argument("--event-schema")
         if name == "replay":
             p.add_argument("--trace", required=True)
     args = parser.parse_args(argv)
 
     policy_src = _read(args.policies)
-    service = ServiceSchema.defaults()
+    event_schema = _read(args.event_schema) if hasattr(args, "event_schema") and args.event_schema else None
+    service = ServiceSchema(event_schema=event_schema)
     if args.command == "check-parse":
         lowered = LoweredPolicySet.from_str(policy_src, service, PolicySchema(""))
         print(f"OK: parsed {lowered.parsed.policy_count()} policy/policies.")

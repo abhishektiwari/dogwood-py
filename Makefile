@@ -1,4 +1,4 @@
-.PHONY: help setup develop examples-deps test perf-test example cli-example fastapi-example build sdist clean
+.PHONY: help setup activate deactivate develop examples-deps test perf-test example cli-example fastapi-example strands-shopping-agent docs docs-ci docs-watch build sdist clean
 
 PYTHON ?= python
 VENV ?= .venv
@@ -10,6 +10,8 @@ SDIST_ARGS ?= --out dist
 help:
 	@echo "Targets:"
 	@echo "  make setup    Create .venv and install dev tools"
+	@echo "  make activate  Print the command to activate .venv"
+	@echo "  make deactivate  Print the command to deactivate .venv"
 	@echo "  make develop  Build/install PyO3 extension in editable mode"
 	@echo "  make examples-deps  Install dependencies used by examples"
 	@echo "  make test     Run tests"
@@ -17,6 +19,10 @@ help:
 	@echo "  make example  Run the API example"
 	@echo "  make cli-example  Run the dogwood-py CLI example"
 	@echo "  make fastapi-example  Run the native-backed FastAPI example"
+	@echo "  make strands-shopping-agent  Run the Strands shopping agent example"
+	@echo "  make docs     Build Sphinx HTML documentation"
+	@echo "  make docs-ci  Install docs-only deps and build Sphinx HTML documentation"
+	@echo "  make docs-watch  Rebuild and serve docs while files change"
 	@echo "  make build    Build wheel"
 	@echo "  make sdist    Build source distribution"
 	@echo "  make clean    Remove generated caches and Rust build output"
@@ -25,6 +31,12 @@ setup:
 	$(PYTHON) -m venv $(VENV)
 	$(VENV_PYTHON) -m pip install -U pip
 	$(VENV_PYTHON) -m pip install -e '.[dev]'
+
+activate:
+	@echo "Run: source $(VENV)/bin/activate"
+
+deactivate:
+	@echo "Run: deactivate"
 
 develop: setup
 	$(MATURIN) develop
@@ -47,6 +59,19 @@ cli-example:
 fastapi-example:
 	$(VENV_PYTHON) -m uvicorn examples.fastapi_simple.app:app --reload --host 127.0.0.1 --port 8000
 
+strands-shopping-agent:
+	PYTHONPATH=src $(VENV_PYTHON) -m examples.strands_shopping_agent.agent $(or $(ARGS),--user alice)
+
+docs:
+	$(VENV_PYTHON) -m sphinx -E -b html docs/source docs/build/html
+
+docs-ci:
+	$(PYTHON) -m pip install -r docs/requirements.txt
+	PYTHONPATH=src $(PYTHON) -m sphinx -E -b html docs/source docs/build/html
+
+docs-watch:
+	$(VENV_PYTHON) -m sphinx_autobuild docs/source docs/build/html --host 127.0.0.1 --port 8001
+
 build:
 	$(MATURIN) build $(BUILD_ARGS)
 
@@ -58,4 +83,5 @@ clean:
 	rm -rf src/dogwood/__pycache__ tests/__pycache__
 	rm -f src/dogwood/_version.py
 	rm -rf rust/target
+	rm -rf docs/build docs/source/generated
 	rm -rf build dist *.egg-info

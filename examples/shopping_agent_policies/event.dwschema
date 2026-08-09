@@ -1,0 +1,31 @@
+// Event schema for shopping-agent tool calls.
+//
+// The current dogwood-py native authorizer evaluates and records
+// CallTool::request events. Successful checkout is represented by the
+// framework-provided input status field (`status == "completed"`), which lets
+// budget and quota policies distinguish completed orders from blocked attempts.
+
+decision event <A>::request {
+    ...inputs(A),
+    pin callerPrincipal: principalType(A) = principal,
+    callerResource: resourceType(A),
+    requestId: String,
+    sessionId: String,
+}
+
+event <A>::response {
+    ...inputs(A),
+    ...outputs(A),
+    pin callerPrincipal: principalType(A) = principal,
+    callerResource: resourceType(A),
+    requestId: String,
+    sessionId: String,
+}
+
+event <A>::error {
+    ...inputs(A),
+    pin callerPrincipal: principalType(A) = principal,
+    callerResource: resourceType(A),
+    requestId: String,
+    sessionId: String,
+}

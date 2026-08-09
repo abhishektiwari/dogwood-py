@@ -1,0 +1,22 @@
+@id("shopping_daily_order_quota")
+@hint("daily order quota has been reached")
+permit (
+    principal,
+    action == Drupe::Action::"CallTool",
+    resource
+)
+when temporal {
+    exists (n: Long). (
+        (count for (t: Timepoint). where (
+            formerly within 1d (
+                Drupe::Action::"CallTool"::request{
+                    input.tool: "checkout_cart",
+                    input.input.user: context.input.input.user,
+                    input.input.status: "completed"
+                }
+                && tp(t)
+            )
+        )) == n
+        && n < 3
+    )
+};

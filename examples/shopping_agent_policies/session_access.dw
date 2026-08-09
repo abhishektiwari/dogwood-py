@@ -1,0 +1,24 @@
+@id("shopping_session_access_not_revoked")
+@hint("access required: run grant first")
+permit (
+    principal,
+    action == Drupe::Action::"CallTool",
+    resource
+)
+when temporal {
+    context.input.tool != "grant_session" &&
+    context.input.tool != "revoke_session" &&
+    (
+        !Drupe::Action::"CallTool"::request{
+            input.tool: "revoke_session",
+            input.input.user: context.input.input.user,
+            input.input.session_id: context.input.input.session_id
+        }
+        since within 1h
+        Drupe::Action::"CallTool"::request{
+            input.tool: "grant_session",
+            input.input.user: context.input.input.user,
+            input.input.session_id: context.input.input.session_id
+        }
+    )
+};

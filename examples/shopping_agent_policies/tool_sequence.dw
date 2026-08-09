@@ -1,0 +1,18 @@
+@id("shopping_checkout_after_add_to_cart")
+@hint("add an item to the cart before checkout")
+permit (
+    principal,
+    action == Drupe::Action::"CallTool",
+    resource
+)
+when temporal {
+    context.input.tool == "checkout_cart" &&
+    formerly within 1h (
+        Drupe::Action::"CallTool"::request{
+            input.tool: "add_to_cart",
+            input.input.user: context.input.input.user,
+            input.input.cart_id: context.input.input.cart_id,
+            input.input.item_id: context.input.input.item_id
+        }
+    )
+};

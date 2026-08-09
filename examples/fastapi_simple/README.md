@@ -8,6 +8,8 @@ Quota policy: `quota_policy.dw`
 
 Schema: `schema.cedarschema`
 
+Event schema: `event.dwschema`
+
 The policy enforces a `$50` daily transfer limit per user. Because Dogwood's
 authorizer is stateful, each accepted `Transfer::request` becomes part of the
 event history. Three `$20` transfers by the same user produce:

@@ -305,7 +305,7 @@ jobs:
           fi
 
           gh release create "$GITHUB_TAG" dist/* \
-            --title "${VERSION}" \
+            --title "${GITHUB_TAG}" \
             --notes "Automated dogwood-py release.
 
           Version: ${VERSION}
