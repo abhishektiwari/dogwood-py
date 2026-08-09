@@ -1,6 +1,10 @@
 Strands Shopping Agent
 ======================
 
+.. meta::
+   :description: Run a Strands shopping agent example where dogwood-py policies control session access, checkout approval, item risk, daily budget, and order quota.
+   :keywords: Strands shopping agent, dogwood-py agent policy, agent tool authorization, shopping agent guardrails
+
 The Strands example models a shopping agent protected by Dogwood policies for
 session access, login before checkout, checkout approval, high-risk item
 step-up, daily budget, daily order quota, and tool sequencing.

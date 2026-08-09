@@ -1,6 +1,10 @@
 CLI Example
 ===========
 
+.. meta::
+   :description: Run dogwood-py from the command line to validate, lower, and replay Dogwood policies with Cedar schemas and event schemas.
+   :keywords: dogwood-py CLI, Dogwood replay, Dogwood validate, Dogwood lower, Cedar schema
+
 The CLI exposes validation, replay, and lowering commands:
 
 .. code-block:: bash

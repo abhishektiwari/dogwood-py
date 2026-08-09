@@ -1,6 +1,10 @@
 Dogwood Policy Python SDK
 =========================
 
+.. meta::
+   :description: dogwood-py is a Python SDK and PyO3 binding for Dogwood, a Cedar-compatible temporal authorization policy language for Python, FastAPI, CLIs, and Strands Agents.
+   :keywords: Dogwood, dogwood-py, Python SDK, authorization, Cedar policy, temporal policy, PyO3, maturin, FastAPI, Strands Agents
+
 Python SDK and PyO3 binding for the `Dogwood <https://github.com/dogwood-policy/dogwood>`_
 policy language. Dogwood is a policy language for fine-grained authorization
 decisions that depend on history or patterns of events over time - not just a
@@ -64,6 +68,12 @@ for schema-backed lowering, validation, and trace replay. The Python SDK also
 keeps a temporary pure-Python fallback only for source-tree examples that omit
 a full Cedar action schema. Schema-backed workflows require the native
 extension.
+
+dogwood-py also provides optional Strands Agents support. Dogwood policies can
+be attached as Strands interventions so tool calls are checked before execution,
+with typed outcomes such as proceed, deny, guide, confirm, and transform. See
+:doc:`strands` for the integration API and
+:doc:`examples/strands-shopping-agent` for a runnable shopping-agent example.
 
 
 .. toctree::

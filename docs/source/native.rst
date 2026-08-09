@@ -1,5 +1,9 @@
-Native vs. Non-Native Execution
-===============================
+Native Rust Binding
+===================
+
+.. meta::
+   :description: Use the dogwood-py native Rust binding powered by PyO3 and maturin for schema-backed Dogwood policy lowering, validation, trace replay, and authorization.
+   :keywords: dogwood-py native, Dogwood Rust binding, PyO3, maturin, Cedar policy validation, temporal authorization
 
 This package has two execution paths.
 

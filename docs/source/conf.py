@@ -31,6 +31,7 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.githubpages",
     "sphinx_copybutton",
+    "sphinx_sitemap",
 ]
 
 autodoc_mock_imports = ["dogwood._dogwood_native"]
@@ -44,7 +45,10 @@ master_doc = "index"
 
 html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
+html_extra_path = ["robots.txt"]
 html_css_files = ["custom.css"]
+html_baseurl = "https://abhishektiwari.github.io/dogwood-py/"
+sitemap_url_scheme = "{link}"
 
 html_theme_options = {
     "collapse_navigation": True,
@@ -80,9 +84,33 @@ html_theme_options = {
     ],
 }
 
-html_title = f"{project} Documentation"
+html_title = "dogwood-py - Python SDK for Dogwood Policy"
 html_short_title = project
 htmlhelp_basename = "dogwoodpydoc"
+html_meta = {
+    "description": (
+        "dogwood-py is a Python SDK and PyO3 binding for Dogwood, a "
+        "Cedar-compatible temporal authorization policy language for Python, "
+        "FastAPI, CLIs, and Strands Agents."
+    ),
+    "keywords": (
+        "Dogwood, dogwood-py, Python SDK, authorization, Cedar policy, "
+        "temporal policy, PyO3, maturin, FastAPI, Strands Agents, agentic AI"
+    ),
+    "og:title": "dogwood-py - Python SDK for Dogwood Policy",
+    "og:description": (
+        "Use Dogwood temporal authorization policies from Python, FastAPI, "
+        "CLIs, and Strands Agents."
+    ),
+    "og:type": "website",
+    "og:url": html_baseurl,
+    "twitter:card": "summary",
+    "twitter:title": "dogwood-py - Python SDK for Dogwood Policy",
+    "twitter:description": (
+        "Python SDK and native Rust binding for Dogwood temporal "
+        "authorization policies."
+    ),
+}
 
 # -- Extension configuration -------------------------------------------------
 

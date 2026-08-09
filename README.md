@@ -31,6 +31,10 @@ keeps a temporary pure-Python fallback only for source-tree examples that omit
 a full Cedar action schema. Schema-backed workflows require the native
 extension.
 
+dogwood-py also provides optional Strands Agents support. Dogwood policies can
+be attached as Strands interventions so tool calls are checked before execution,
+with typed outcomes such as proceed, deny, guide, confirm, and transform.
+
 ## Install
 
 Install the latest released package from PyPI:
@@ -43,6 +47,12 @@ To install the optional example dependencies:
 
 ```bash
 pip install "dogwood-py[examples]"
+```
+
+To install the optional Strands Agents integration:
+
+```bash
+pip install "dogwood-py[strands]"
 ```
 
 The package installs as `dogwood`:

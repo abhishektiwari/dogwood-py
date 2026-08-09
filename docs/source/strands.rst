@@ -1,5 +1,9 @@
-Strands Agents
-===============
+Strands Agents Integration
+==========================
+
+.. meta::
+   :description: Attach Dogwood temporal authorization policies to Strands Agents tool calls using dogwood-py interventions, plugins, hooks, and typed decisions.
+   :keywords: Dogwood Strands Agents, dogwood-py Strands integration, agent tool authorization, agentic AI policy, Strands interventions
 
 Dogwood policies should usually guard Strands tool calls through interventions.
 Plugins and direct hooks are still available for lower-level integration. All

@@ -12,7 +12,17 @@ description = "Python SDK and reference-compatible interpreter surface for Dogwo
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
-keywords = ["dogwood", "policy", "authorization", "cedar"]
+keywords = [
+  "dogwood",
+  "policy",
+  "authorization",
+  "cedar",
+  "temporal-policy",
+  "pyo3",
+  "maturin",
+  "fastapi",
+  "strands-agents",
+]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -27,8 +37,10 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/abhishektiwari/dogwood-py"
+Documentation = "https://abhishektiwari.github.io/dogwood-py/"
 "Bug Reports" = "https://github.com/abhishektiwari/dogwood-py/issues"
-"Source" = "https://github.com/abhishektiwari/dogwood-py"
+Repository = "https://github.com/abhishektiwari/dogwood-py"
+Source = "https://github.com/abhishektiwari/dogwood-py"
 
 [project.scripts]
 dogwood-py = "dogwood.cli:main"
@@ -42,6 +54,7 @@ dev = [
   "sphinx-autobuild>=2024.10",
   "sphinx-book-theme>=1.1",
   "sphinx-copybutton>=0.5",
+  "sphinx-sitemap>=2.6",
   "twine>=5",
 ]
 examples = [

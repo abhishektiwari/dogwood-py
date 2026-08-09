@@ -1,6 +1,10 @@
 FastAPI Native Example
 ======================
 
+.. meta::
+   :description: Build a FastAPI service that uses the dogwood-py native Rust binding for temporal authorization and daily transfer limit policies.
+   :keywords: dogwood-py FastAPI, Dogwood authorization API, temporal authorization service, daily transfer limit
+
 The FastAPI example uses the native binding and a real Cedar schema. It loads
 its own ``examples/fastapi_simple/policy.dw`` and
 ``examples/fastapi_simple/schema.cedarschema`` plus

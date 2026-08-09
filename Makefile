@@ -62,7 +62,7 @@ strands-shopping-agent:
 	PYTHONPATH=src $(VENV_PYTHON) -m examples.strands_shopping_agent.agent $(or $(ARGS),--user alice)
 
 docs:
-	$(VENV_PYTHON) -m sphinx -b html docs/source docs/build/html
+	$(VENV_PYTHON) -m sphinx -E -b html docs/source docs/build/html
 
 docs-watch:
 	$(VENV_PYTHON) -m sphinx_autobuild docs/source docs/build/html --host 127.0.0.1 --port 8001
