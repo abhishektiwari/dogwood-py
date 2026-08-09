@@ -39,13 +39,6 @@ Install the latest released package from PyPI:
 pip install dogwood-py
 ```
 
-Pre-release builds are published for pull requests. To try the latest
-pre-release:
-
-```bash
-pip install --pre dogwood-py
-```
-
 To install the optional example dependencies:
 
 ```bash
@@ -305,6 +298,8 @@ Expected output:
 ## Make Targets
 
 - `make setup` creates `.venv` and installs development tools.
+- `make activate` prints the command to activate `.venv`.
+- `make deactivate` prints the command to deactivate `.venv`.
 - `make develop` builds and installs the PyO3 extension in editable mode.
 - `make examples-deps` installs optional dependencies used by examples.
 - `make test` runs the Python test suite.
@@ -312,6 +307,8 @@ Expected output:
 - `make example` runs `examples/api_usage.py`.
 - `make cli-example` runs the `dogwood-py replay` example.
 - `make fastapi-example` starts the native-backed FastAPI server.
+- `make docs` builds Sphinx HTML documentation in `docs/build/html`.
+- `make docs-watch` rebuilds and serves docs at `http://127.0.0.1:8001`.
 - `make build` builds a wheel with maturin.
 - `make clean` removes generated caches and Rust build output.
 
