@@ -1,6 +1,9 @@
 # Dogwood Policy Python SDK
 
-Python SDK and PyO3 binding for the [Dogwood](https://github.com/dogwood-policy/dogwood) policy language. Dogwood is a policy language for fine-grained authorization decisions that depend on history or patterns of events over time - not just a single request. It adds temporal conditions (since, formerly, once, aggregations) and information providers (computed guardrail facts) on top of Cedar policy syntax, then lowers everything back to Cedar for evaluation. Existing Cedar policies stay valid as-is.
+Python SDK and PyO3 binding for the [Dogwood](https://github.com/dogwood-policy/dogwood) policy language. Dogwood is a policy language for fine-grained authorization decisions that depend on history or patterns of events over time - not just a single request. It adds temporal conditions (since, formerly, once, aggregations) and information providers (computed guardrail facts) on top of [Cedar](https://www.cedarpolicy.com/) policy syntax, then lowers everything back to Cedar for evaluation. Existing Cedar policies stay valid as-is. For information, **[read the Dogwood documentation](https://dogwood-policy.github.io/dogwood/index.html)**.
+
+> ⚠️⚠️⚠️ Current Dogwood reference interpreter is not intended for production use;
+therefore, this Python SDK and PyO3 binding is experimental in nature.
 
 
 ![GitHub Release](https://img.shields.io/github/v/release/abhishektiwari/dogwood-py)
@@ -28,26 +31,43 @@ keeps a temporary pure-Python fallback only for source-tree examples that omit
 a full Cedar action schema. Schema-backed workflows require the native
 extension.
 
-## Install For Development
+## Install
 
-The project uses a local `.venv` and maturin editable installs:
+Install the latest released package from PyPI:
 
 ```bash
-make setup
-make develop
-make test
+pip install dogwood-py
 ```
 
-The native extension imports as `dogwood._dogwood_native`; convenience wrappers
-live in `dogwood.native`.
+Pre-release builds are published for pull requests. To try the latest
+pre-release:
+
+```bash
+pip install --pre dogwood-py
+```
+
+To install the optional example dependencies:
+
+```bash
+pip install "dogwood-py[examples]"
+```
+
+The package installs as `dogwood`:
+
+```python
+from dogwood import native
+
+assert native.available()
+```
+
 
 ## Native vs. Non-Native Execution
 
 This package has two execution paths.
 
 **Native path**
-
-The native path is the PyO3 extension built by maturin. It calls the Rust
+The native extension imports as `dogwood._dogwood_native`; convenience wrappers
+live in `dogwood.native`. The native path is the PyO3 extension built by maturin. It calls the Rust
 `dogwood-language` reference implementation.
 
 Used for:
@@ -313,7 +333,7 @@ python fallback authorizer: 0.0147s
 ratio native/python: 30.14
 ```
 
-This result does not mean the Rust implementation is slower in general. The
+This result does not mean the reference Rust implementation is slower in general. The
 test compares the full native Dogwood path, including real schema-backed Rust
 lowering/replay semantics, against the intentionally minimal Python fallback.
 The value of the test is detecting large accidental regressions in the binding
@@ -324,24 +344,6 @@ request still crosses the Python/Rust boundary, converts Python input into
 Dogwood values, and runs the full Cedar-backed decision path. The fallback
 remains much faster for this tiny policy because it evaluates only a narrow
 regex-parsed subset with no real Cedar schema semantics.
-
-## GitHub Actions
-
-The repository includes workflows adapted for this PyO3/maturin package:
-
-- `Tests` runs on pull requests and pushes to `main`. It builds the native
-  extension with `maturin develop`, runs `pytest`, and checks the CLI example
-  across Python 3.10-3.13 on Linux and macOS.
-- `Build and Release` runs on pull requests and pushes to `main`. Pull requests
-  build source/wheel artifacts for review. Pushes to `main` build the same
-  artifacts and create a GitHub release.
-- `Security Checks` runs workflow linting, dependency review, hidden Unicode
-  scanning, and flags workflow-file changes for review.
-- Dependabot checks GitHub Actions, Cargo, and Python dependency updates weekly.
-
-PyPI publishing is opt-in. Configure trusted publishing for the `pypi`
-environment and set the repository variable `PUBLISH_PYPI=true` to publish
-distributions on pushes to `main`.
 
 ## Current Scope
 
