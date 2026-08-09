@@ -1,4 +1,4 @@
-.PHONY: help setup activate deactivate develop examples-deps test perf-test example cli-example fastapi-example strands-shopping-agent docs docs-watch build sdist clean
+.PHONY: help setup activate deactivate develop examples-deps test perf-test example cli-example fastapi-example strands-shopping-agent docs docs-ci docs-watch build sdist clean
 
 PYTHON ?= python
 VENV ?= .venv
@@ -21,6 +21,7 @@ help:
 	@echo "  make fastapi-example  Run the native-backed FastAPI example"
 	@echo "  make strands-shopping-agent  Run the Strands shopping agent example"
 	@echo "  make docs     Build Sphinx HTML documentation"
+	@echo "  make docs-ci  Install docs-only deps and build Sphinx HTML documentation"
 	@echo "  make docs-watch  Rebuild and serve docs while files change"
 	@echo "  make build    Build wheel"
 	@echo "  make sdist    Build source distribution"
@@ -63,6 +64,10 @@ strands-shopping-agent:
 
 docs:
 	$(VENV_PYTHON) -m sphinx -E -b html docs/source docs/build/html
+
+docs-ci:
+	$(PYTHON) -m pip install -r docs/requirements.txt
+	PYTHONPATH=src $(PYTHON) -m sphinx -E -b html docs/source docs/build/html
 
 docs-watch:
 	$(VENV_PYTHON) -m sphinx_autobuild docs/source docs/build/html --host 127.0.0.1 --port 8001
