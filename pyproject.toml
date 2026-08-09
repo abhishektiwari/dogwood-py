@@ -49,6 +49,9 @@ examples = [
   "httpx2>=0.28",
   "uvicorn[standard]>=0.30",
 ]
+strands = [
+  "strands-agents>=1",
+]
 
 [tool.maturin]
 manifest-path = "rust/Cargo.toml"

@@ -1,0 +1,17 @@
+@id("shopping_session_login_required")
+@hint("run login before checkout")
+permit (
+    principal,
+    action == Drupe::Action::"CallTool",
+    resource
+)
+when temporal {
+    context.input.tool != "login" &&
+    formerly within 1h (
+        Drupe::Action::"CallTool"::request{
+            input.tool: "login",
+            input.input.user: context.input.input.user,
+            input.input.session_id: context.input.input.session_id
+        }
+    )
+};

@@ -307,6 +307,7 @@ Expected output:
 - `make example` runs `examples/api_usage.py`.
 - `make cli-example` runs the `dogwood-py replay` example.
 - `make fastapi-example` starts the native-backed FastAPI server.
+- `make strands-shopping-agent` runs the Strands shopping agent example.
 - `make docs` builds Sphinx HTML documentation in `docs/build/html`.
 - `make docs-watch` rebuilds and serves docs at `http://127.0.0.1:8001`.
 - `make build` builds a wheel with maturin.

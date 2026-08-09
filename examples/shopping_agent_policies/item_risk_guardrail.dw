@@ -1,0 +1,62 @@
+@id("shopping_low_risk_add_allowed")
+@hint("run step-up for the highest-risk item, then retry")
+permit (
+    principal,
+    action == Drupe::Action::"CallTool",
+    resource
+)
+when {
+    context.input.tool == "add_to_cart" &&
+    context.input.input.risk <= 50
+};
+
+@id("shopping_low_risk_checkout_allowed")
+permit (
+    principal,
+    action == Drupe::Action::"CallTool",
+    resource
+)
+when {
+    context.input.tool == "checkout_cart" &&
+    context.input.input.risk <= 50
+};
+
+@id("shopping_high_risk_add_requires_step_up")
+permit (
+    principal,
+    action == Drupe::Action::"CallTool",
+    resource
+)
+when temporal {
+    context.input.tool == "add_to_cart" &&
+    context.input.input.risk > 50 &&
+    formerly within 10m (
+        Drupe::Action::"CallTool"::request{
+            input.tool: "approve_step_up",
+            input.input.user: context.input.input.user,
+            input.input.cart_id: context.input.input.cart_id,
+            input.input.item_id: context.input.input.item_id,
+            input.input.status: "approved"
+        }
+    )
+};
+
+@id("shopping_high_risk_checkout_requires_step_up")
+permit (
+    principal,
+    action == Drupe::Action::"CallTool",
+    resource
+)
+when temporal {
+    context.input.tool == "checkout_cart" &&
+    context.input.input.risk > 50 &&
+    formerly within 10m (
+        Drupe::Action::"CallTool"::request{
+            input.tool: "approve_step_up",
+            input.input.user: context.input.input.user,
+            input.input.cart_id: context.input.input.cart_id,
+            input.input.item_id: context.input.input.item_id,
+            input.input.status: "approved"
+        }
+    )
+};

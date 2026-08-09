@@ -1,4 +1,4 @@
-.PHONY: help setup activate deactivate develop examples-deps test perf-test example cli-example fastapi-example docs docs-watch build sdist clean
+.PHONY: help setup activate deactivate develop examples-deps test perf-test example cli-example fastapi-example strands-shopping-agent docs docs-watch build sdist clean
 
 PYTHON ?= python
 VENV ?= .venv
@@ -19,6 +19,7 @@ help:
 	@echo "  make example  Run the API example"
 	@echo "  make cli-example  Run the dogwood-py CLI example"
 	@echo "  make fastapi-example  Run the native-backed FastAPI example"
+	@echo "  make strands-shopping-agent  Run the Strands shopping agent example"
 	@echo "  make docs     Build Sphinx HTML documentation"
 	@echo "  make docs-watch  Rebuild and serve docs while files change"
 	@echo "  make build    Build wheel"
@@ -56,6 +57,9 @@ cli-example:
 
 fastapi-example:
 	$(VENV_PYTHON) -m uvicorn examples.fastapi_simple.app:app --reload --host 127.0.0.1 --port 8000
+
+strands-shopping-agent:
+	PYTHONPATH=src $(VENV_PYTHON) -m examples.strands_shopping_agent.agent $(or $(ARGS),--user alice)
 
 docs:
 	$(VENV_PYTHON) -m sphinx -b html docs/source docs/build/html

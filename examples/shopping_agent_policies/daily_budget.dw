@@ -1,0 +1,21 @@
+@id("shopping_daily_budget")
+@hint("either daily budget is exceeded or cart total needs to be reduced so today's successful orders stay within daily budget")
+permit (
+    principal,
+    action == Drupe::Action::"CallTool",
+    resource
+)
+when temporal {
+    exists (total: Long). (
+        (sum_within(
+            amount,
+            1d,
+            Drupe::Action::"CallTool"::request{
+                input.tool: "checkout_cart",
+                input.input.user: context.input.input.user,
+                input.input.amount: amount
+            }
+        )) == total
+        && total <= 50
+    )
+};
