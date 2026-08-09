@@ -47,7 +47,7 @@ html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
 html_extra_path = ["robots.txt"]
 html_css_files = ["custom.css"]
-html_baseurl = "https://abhishektiwari.github.io/dogwood-py/"
+html_baseurl = "https://dogwood-py.abhishek-tiwari.com/"
 sitemap_url_scheme = "{link}"
 
 html_theme_options = {

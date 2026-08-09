@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://abhishektiwari.github.io/dogwood-py/sitemap.xml
+Sitemap: https://dogwood-py.abhishek-tiwari.com/sitemap.xml

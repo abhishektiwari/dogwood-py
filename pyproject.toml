@@ -37,7 +37,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/abhishektiwari/dogwood-py"
-Documentation = "https://abhishektiwari.github.io/dogwood-py/"
+Documentation = "https://dogwood-py.abhishek-tiwari.com/"
 "Bug Reports" = "https://github.com/abhishektiwari/dogwood-py/issues"
 Repository = "https://github.com/abhishektiwari/dogwood-py"
 Source = "https://github.com/abhishektiwari/dogwood-py"
