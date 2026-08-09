@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -34,7 +34,6 @@ except ImportError:  # pragma: no cover - fallback is covered through behavior t
     _StrandsTransform = None
 
 ConfirmResolver = bool | str | Callable[[Any], bool | str | None]
-PrecheckResolver = Callable[[Any], Any | None]
 
 
 @dataclass(frozen=True)
@@ -85,6 +84,7 @@ class DogwoodIntervention(_StrandsInterventionHandler):
         policy_source: str | None = None,
         policy_schema_source: str | None = None,
         *,
+        event_schema_source: str | None = None,
         authorizer: native.NativeAuthorizer | None = None,
         action: str = "Drupe::Action::CallTool",
         principal: str | IdentityResolver = default_principal,
@@ -93,12 +93,12 @@ class DogwoodIntervention(_StrandsInterventionHandler):
         deny_message: str = "Dogwood policy denied this tool call.",
         confirm_when: ConfirmResolver = False,
         confirm_prompt: str = "Approve this Dogwood-controlled tool call?",
-        precheck: PrecheckResolver | Iterable[PrecheckResolver] | None = None,
     ) -> None:
         super().__init__()
         self.policy_hook = _build_policy_hook(
             policy_source,
             policy_schema_source,
+            event_schema_source=event_schema_source,
             authorizer=authorizer,
             action=action,
             principal=principal,
@@ -108,15 +108,9 @@ class DogwoodIntervention(_StrandsInterventionHandler):
         )
         self.confirm_when = confirm_when
         self.confirm_prompt = confirm_prompt
-        self.prechecks = _precheck_list(precheck)
 
     def before_tool_call(self, event: Any, **kwargs: Any) -> Any:
         """Authorize a Strands tool call and return a typed control decision."""
-        for precheck in self.prechecks:
-            precheck_decision = _precheck_decision(precheck, event, self.policy_hook.deny_message)
-            if precheck_decision is not None:
-                return precheck_decision
-
         if _is_allowed(_authorize_event(self.policy_hook, event)):
             return _proceed()
         confirm_prompt = _confirm_prompt(self.confirm_when, self.confirm_prompt, event)
@@ -213,31 +207,6 @@ def _transform(apply: Callable[[Any], Any]) -> Any:
 
 def transform(apply: Callable[[Any], Any]) -> Any:
     return _transform(apply)
-
-
-def _precheck_list(
-    precheck: PrecheckResolver | Iterable[PrecheckResolver] | None,
-) -> tuple[PrecheckResolver, ...]:
-    if precheck is None:
-        return ()
-    if callable(precheck):
-        return (precheck,)
-    return tuple(precheck)
-
-
-def _precheck_decision(
-    precheck: PrecheckResolver,
-    event: Any,
-    default_deny_message: str,
-) -> Any | None:
-    result = precheck(event)
-    if result is None or result is True:
-        return None
-    if result is False:
-        return _deny(default_deny_message)
-    if isinstance(result, str):
-        return _deny(result)
-    return result
 
 
 def _confirm_prompt(

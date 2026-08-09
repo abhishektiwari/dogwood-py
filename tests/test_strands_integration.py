@@ -5,8 +5,11 @@ import pytest
 
 from dogwood import native
 from dogwood.integrations.strands import (
+    confirm,
+    deny,
     DogwoodIntervention,
     DogwoodPlugin,
+    proceed,
     StrandsPolicyHook,
     default_tool_input,
     guide,
@@ -110,62 +113,25 @@ def test_dogwood_intervention_returns_deny_for_denied_tool_call():
     assert getattr(decision, "reason", None) == "Denied by Dogwood."
 
 
-def test_dogwood_intervention_precheck_runs_before_policy_check():
-    intervention = DogwoodIntervention(
-        authorizer=FakeAuthorizer("Allow"),
-        precheck=lambda event: "missing required cart context",
-    )
-    event = SimpleNamespace(tool_use={"name": "checkout_cart", "input": {}})
-
-    decision = intervention.before_tool_call(event)
-
-    assert decision.__class__.__name__.endswith("Deny")
-    assert getattr(decision, "reason", None) == "missing required cart context"
-    assert intervention.policy_hook.authorizer.calls == []
-
-
-def test_dogwood_intervention_precheck_can_continue_to_policy_check():
-    intervention = DogwoodIntervention(
-        authorizer=FakeAuthorizer("Allow"),
-        precheck=lambda event: None,
-    )
-    event = SimpleNamespace(tool_use={"name": "search", "input": {}})
-
-    decision = intervention.before_tool_call(event)
-
-    assert decision.__class__.__name__.endswith("Proceed")
-    assert len(intervention.policy_hook.authorizer.calls) == 1
-
-
-def test_dogwood_intervention_precheck_can_return_guide():
-    intervention = DogwoodIntervention(
-        authorizer=FakeAuthorizer("Allow"),
-        precheck=lambda event: guide("Include a subject before sending email."),
-    )
-    event = SimpleNamespace(tool_use={"name": "send_email", "input": {}})
-
-    decision = intervention.before_tool_call(event)
-
-    assert decision.__class__.__name__.endswith("Guide")
-    assert getattr(decision, "feedback", None) == "Include a subject before sending email."
-    assert intervention.policy_hook.authorizer.calls == []
-
-
-def test_dogwood_intervention_precheck_can_return_transform():
+def test_strands_action_helpers_return_typed_decisions():
     def redact(event):
         event.tool_use["input"]["body"] = "redacted"
 
-    intervention = DogwoodIntervention(
-        authorizer=FakeAuthorizer("Allow"),
-        precheck=lambda event: transform(redact),
-    )
-    event = SimpleNamespace(tool_use={"name": "send_email", "input": {"body": "secret"}})
+    proceed_decision = proceed()
+    deny_decision = deny("Blocked.")
+    confirm_decision = confirm("Approve?")
+    guide_decision = guide("Include a subject before sending email.")
+    transform_decision = transform(redact)
 
-    decision = intervention.before_tool_call(event)
-
-    assert decision.__class__.__name__.endswith("Transform")
-    assert getattr(decision, "apply", None) is redact
-    assert intervention.policy_hook.authorizer.calls == []
+    assert proceed_decision.__class__.__name__.endswith("Proceed")
+    assert deny_decision.__class__.__name__.endswith("Deny")
+    assert getattr(deny_decision, "reason", None) == "Blocked."
+    assert confirm_decision.__class__.__name__.endswith("Confirm")
+    assert getattr(confirm_decision, "prompt", None) == "Approve?"
+    assert guide_decision.__class__.__name__.endswith("Guide")
+    assert getattr(guide_decision, "feedback", None) == "Include a subject before sending email."
+    assert transform_decision.__class__.__name__.endswith("Transform")
+    assert getattr(transform_decision, "apply", None) is redact
 
 
 def test_dogwood_intervention_returns_confirm_for_confirmable_denied_tool_call():
@@ -202,6 +168,7 @@ def test_dogwood_plugin_default_action_matches_native_authorizer():
     plugin = DogwoodPlugin(
         policy_source=(examples_dir / "daily_budget.dw").read_text(),
         policy_schema_source=(examples_dir / "schema.cedarschema").read_text(),
+        event_schema_source=(examples_dir / "event.dwschema").read_text(),
     )
 
     allowed_event = SimpleNamespace(
@@ -216,7 +183,7 @@ def test_dogwood_plugin_default_action_matches_native_authorizer():
                 "amount": 20,
                 "quantity": 1,
                 "risk": 0,
-                "status": "requested",
+                    "status": "completed",
             },
             "toolUseId": "tool-use-1",
         },
@@ -237,7 +204,7 @@ def test_dogwood_plugin_default_action_matches_native_authorizer():
                 "amount": 40,
                 "quantity": 1,
                 "risk": 0,
-                "status": "requested",
+                    "status": "completed",
             },
             "toolUseId": "tool-use-2",
         },

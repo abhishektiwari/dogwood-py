@@ -71,7 +71,10 @@ extension.
    :caption: User Guide
 
    installation
-   usage
+   getting-started
+   native
+   strands
+   examples/index
    api
 
 

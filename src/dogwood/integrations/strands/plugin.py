@@ -33,6 +33,7 @@ class DogwoodPlugin(_StrandsPlugin):
         policy_source: str | None = None,
         policy_schema_source: str | None = None,
         *,
+        event_schema_source: str | None = None,
         authorizer: native.NativeAuthorizer | None = None,
         action: str = "Drupe::Action::CallTool",
         principal: str | IdentityResolver = default_principal,
@@ -44,6 +45,7 @@ class DogwoodPlugin(_StrandsPlugin):
         self.policy_hook = _build_policy_hook(
             policy_source,
             policy_schema_source,
+            event_schema_source=event_schema_source,
             authorizer=authorizer,
             action=action,
             principal=principal,

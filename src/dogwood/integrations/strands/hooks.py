@@ -40,6 +40,7 @@ def before_tool_call_hook(
     policy_source: str,
     policy_schema_source: str,
     *,
+    event_schema_source: str | None = None,
     action: str = "Drupe::Action::CallTool",
     principal: str | IdentityResolver = default_principal,
     resource: str | IdentityResolver = default_resource,
@@ -54,6 +55,7 @@ def before_tool_call_hook(
     return _build_policy_hook(
         policy_source,
         policy_schema_source,
+        event_schema_source=event_schema_source,
         action=action,
         principal=principal,
         resource=resource,
@@ -90,6 +92,7 @@ def _build_policy_hook(
     policy_source: str | None,
     policy_schema_source: str | None,
     *,
+    event_schema_source: str | None = None,
     authorizer: native.NativeAuthorizer | None = None,
     action: str,
     principal: str | IdentityResolver,
@@ -103,7 +106,11 @@ def _build_policy_hook(
                 "policy_source and policy_schema_source are required when "
                 "authorizer is not supplied"
             )
-        authorizer = native.NativeAuthorizer(policy_source, policy_schema_source)
+        authorizer = native.NativeAuthorizer(
+            policy_source,
+            policy_schema_source,
+            event_schema_source,
+        )
 
     return StrandsPolicyHook(
         authorizer=authorizer,

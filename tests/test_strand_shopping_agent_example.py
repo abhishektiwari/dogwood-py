@@ -11,6 +11,7 @@ from examples.strands_shopping_agent.cart_store import (
     cart_policy_context,
     shopping_cart_id,
 )
+from examples.strands_shopping_agent.console import requested_item
 from examples.strands_shopping_agent.policy_runtime import (
     apply_shopping_precheck,
     build_shopping_tool_event,
@@ -28,6 +29,7 @@ from examples.strands_shopping_agent.tools import (
 
 EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "examples" / "shopping_agent_policies"
 SCHEMA_SOURCE = (EXAMPLES_DIR / "schema.cedarschema").read_text()
+EVENT_SCHEMA_SOURCE = (EXAMPLES_DIR / "event.dwschema").read_text()
 RISK_MAPPING = json.loads((EXAMPLES_DIR / "risk-mapping.json").read_text())
 PRODUCTS = json.loads((EXAMPLES_DIR / "products.json").read_text())
 
@@ -89,6 +91,7 @@ def decisions_for_events(policy_file: str, events: list[object]) -> list[str]:
     plugin = DogwoodPlugin(
         policy_source=(EXAMPLES_DIR / policy_file).read_text(),
         policy_schema_source=SCHEMA_SOURCE,
+        event_schema_source=EVENT_SCHEMA_SOURCE,
     )
     return [decision_for(plugin, event) for event in events]
 
@@ -107,6 +110,18 @@ def test_shopping_agent_policy_examples():
     ) == [
         "Allow",
         "Allow",
+        "Allow",
+    ]
+    assert decisions_for_events(
+        "daily_budget.dw",
+        [
+            tool_call("checkout_cart", amount=20, status="completed", tool_use_id="budget-completed-1"),
+            tool_call("checkout_cart", amount=20, status="completed", tool_use_id="budget-completed-2"),
+            tool_call("checkout_cart", amount=20, status="completed", tool_use_id="budget-completed-3"),
+        ],
+    ) == [
+        "Allow",
+        "Allow",
         "Deny",
     ]
     assert decisions_for_events(
@@ -115,6 +130,18 @@ def test_shopping_agent_policy_examples():
             tool_call("checkout_cart", amount=1, tool_use_id="quota-1"),
             tool_call("checkout_cart", amount=1, tool_use_id="quota-2"),
             tool_call("checkout_cart", amount=1, tool_use_id="quota-3"),
+        ],
+    ) == [
+        "Allow",
+        "Allow",
+        "Allow",
+    ]
+    assert decisions_for_events(
+        "daily_order_quota.dw",
+        [
+            tool_call("checkout_cart", amount=1, status="completed", tool_use_id="quota-completed-1"),
+            tool_call("checkout_cart", amount=1, status="completed", tool_use_id="quota-completed-2"),
+            tool_call("checkout_cart", amount=1, status="completed", tool_use_id="quota-completed-3"),
         ],
     ) == [
         "Allow",
@@ -331,6 +358,20 @@ def test_strands_shopping_agent_precheck_transforms_model_tool_input():
     assert event.tool_use["input"]["item_id"] == "iphone17-case"
     assert event.tool_use["input"]["quantity"] == 2
     assert event.tool_use["input"]["cart_id"] == "cart-transform-user-transform-session"
+
+
+def test_strands_shopping_agent_requested_item_preserves_unknown_product():
+    assert requested_item(["iphone18-case", "1"], "developer-laptop") == "iphone18-case"
+
+
+def test_strands_shopping_agent_precheck_guides_unknown_product():
+    event = build_shopping_tool_event("add_to_cart", item_id="iphone18-case", quantity=1)
+
+    message = apply_shopping_precheck(event)
+
+    assert message is not None
+    assert "Choose one of these product ids:" in message
+    assert "iphone17-case" in message
 
 
 def test_strands_shopping_agent_interventions_start_with_precheck():

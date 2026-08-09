@@ -14,8 +14,13 @@ struct NativeAuthorizer {
 #[pymethods]
 impl NativeAuthorizer {
     #[new]
-    fn new(policy_source: &str, policy_schema_source: &str) -> PyResult<Self> {
-        let policies = lower(policy_source, policy_schema_source)?;
+    #[pyo3(signature = (policy_source, policy_schema_source, event_schema_source=None))]
+    fn new(
+        policy_source: &str,
+        policy_schema_source: &str,
+        event_schema_source: Option<&str>,
+    ) -> PyResult<Self> {
+        let policies = lower(policy_source, policy_schema_source, event_schema_source)?;
         Ok(Self {
             authorizer: Authorizer::new(policies),
         })
@@ -39,8 +44,13 @@ fn native_available() -> bool {
 }
 
 #[pyfunction]
-fn lower_to_cedar(policy_source: &str, policy_schema_source: &str) -> PyResult<String> {
-    let policies = lower(policy_source, policy_schema_source)?;
+#[pyo3(signature = (policy_source, policy_schema_source, event_schema_source=None))]
+fn lower_to_cedar(
+    policy_source: &str,
+    policy_schema_source: &str,
+    event_schema_source: Option<&str>,
+) -> PyResult<String> {
+    let policies = lower(policy_source, policy_schema_source, event_schema_source)?;
     policies
         .as_cedar()
         .to_string()
@@ -49,16 +59,27 @@ fn lower_to_cedar(policy_source: &str, policy_schema_source: &str) -> PyResult<S
 }
 
 #[pyfunction]
-fn cedar_schema(policy_source: &str, policy_schema_source: &str) -> PyResult<String> {
-    let policies = lower(policy_source, policy_schema_source)?;
+#[pyo3(signature = (policy_source, policy_schema_source, event_schema_source=None))]
+fn cedar_schema(
+    policy_source: &str,
+    policy_schema_source: &str,
+    event_schema_source: Option<&str>,
+) -> PyResult<String> {
+    let policies = lower(policy_source, policy_schema_source, event_schema_source)?;
     policies
         .cedar_schema_str()
         .map_err(|err| PyRuntimeError::new_err(err.to_string()))
 }
 
 #[pyfunction]
-fn validate_policy(py: Python<'_>, policy_source: &str, policy_schema_source: &str) -> PyResult<PyObject> {
-    let policies = lower(policy_source, policy_schema_source)?;
+#[pyo3(signature = (policy_source, policy_schema_source, event_schema_source=None))]
+fn validate_policy(
+    py: Python<'_>,
+    policy_source: &str,
+    policy_schema_source: &str,
+    event_schema_source: Option<&str>,
+) -> PyResult<PyObject> {
+    let policies = lower(policy_source, policy_schema_source, event_schema_source)?;
     let result = Validator::new().validate(&policies);
     let out = PyDict::new_bound(py);
     out.set_item("passed", result.validation_passed())?;
@@ -80,12 +101,27 @@ fn validate_policy(py: Python<'_>, policy_source: &str, policy_schema_source: &s
 }
 
 #[pyfunction]
-fn replay(policy_source: &str, policy_schema_source: &str, trace_source: &str) -> PyResult<String> {
-    let policies = lower(policy_source, policy_schema_source)?;
+#[pyo3(signature = (policy_source, policy_schema_source, trace_source, event_schema_source=None))]
+fn replay(
+    policy_source: &str,
+    policy_schema_source: &str,
+    trace_source: &str,
+    event_schema_source: Option<&str>,
+) -> PyResult<String> {
+    let policies = lower(policy_source, policy_schema_source, event_schema_source)?;
     replay_log(policies, trace_source).map_err(|err| PyRuntimeError::new_err(err.to_string()))
 }
 
 #[pyfunction]
+#[pyo3(signature = (
+    policy_source,
+    policy_schema_source,
+    action,
+    principal,
+    resource,
+    input_json,
+    event_schema_source=None
+))]
 fn authorize_request(
     policy_source: &str,
     policy_schema_source: &str,
@@ -93,8 +129,9 @@ fn authorize_request(
     principal: &str,
     resource: &str,
     input_json: &str,
+    event_schema_source: Option<&str>,
 ) -> PyResult<String> {
-    let policies = lower(policy_source, policy_schema_source)?;
+    let policies = lower(policy_source, policy_schema_source, event_schema_source)?;
     let mut authorizer = Authorizer::new(policies);
     let event = request_event(action, principal, resource, input_json)?;
     decision_string(authorizer.is_authorized(&event))
@@ -133,8 +170,18 @@ fn decision_string(response: Option<dogwood_language::Response>) -> PyResult<Str
     }
 }
 
-fn lower(policy_source: &str, policy_schema_source: &str) -> PyResult<LoweredPolicySet> {
-    let service = ServiceSchema::defaults();
+fn lower(
+    policy_source: &str,
+    policy_schema_source: &str,
+    event_schema_source: Option<&str>,
+) -> PyResult<LoweredPolicySet> {
+    let service = match event_schema_source {
+        Some(source) => ServiceSchema::builder()
+            .event_schema_str(source)
+            .build()
+            .map_err(|err| PyRuntimeError::new_err(err.to_string()))?,
+        None => ServiceSchema::defaults(),
+    };
     let schema = PolicySchema::from_cedarschema_str(policy_schema_source)
         .map_err(|err| PyRuntimeError::new_err(err.to_string()))?;
     LoweredPolicySet::from_str(policy_source, &service, &schema)

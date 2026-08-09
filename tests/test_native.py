@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from dogwood import LoweredPolicySet, PolicySchema, native
+from dogwood import LoweredPolicySet, PolicySchema, ServiceSchema, native
 
 
 POLICY = '''
@@ -64,6 +64,26 @@ namespace Drupe {
 """
 
 
+EVENT_SCHEMA = """
+decision event <A>::request {
+    ...inputs(A),
+    pin callerPrincipal: principalType(A) = principal,
+    callerResource: resourceType(A),
+    requestId: String,
+    sessionId: String,
+}
+
+event <A>::response {
+    ...inputs(A),
+    ...outputs(A),
+    pin callerPrincipal: principalType(A) = principal,
+    callerResource: resourceType(A),
+    requestId: String,
+    sessionId: String,
+}
+"""
+
+
 def test_native_lower_and_validate_with_real_schema():
     if not native.available():
         pytest.skip("native extension is not built")
@@ -77,6 +97,38 @@ def test_native_lower_and_validate_with_real_schema():
     result = native.validate_policy(POLICY, SCHEMA)
     assert result["passed"] is True
     assert result["errors"] == []
+
+
+def test_native_accepts_explicit_event_schema():
+    if not native.available():
+        pytest.skip("native extension is not built")
+
+    authorizer = native.NativeAuthorizer(POLICY, SCHEMA, EVENT_SCHEMA)
+
+    assert (
+        authorizer.authorize_request(
+            "Drupe::Action::SellShares",
+            'Drupe::OAuthUser::"alice"',
+            'Drupe::Gateway::"trading"',
+            {"shares": 25, "stock": "AMZN"},
+        )
+        == "Allow"
+    )
+    assert native.validate_policy(POLICY, SCHEMA, EVENT_SCHEMA)["passed"] is True
+
+
+def test_schema_backed_sdk_accepts_explicit_event_schema():
+    if not native.available():
+        pytest.skip("native extension is not built")
+
+    policies = LoweredPolicySet.from_str(
+        POLICY,
+        service_schema=ServiceSchema(event_schema=EVENT_SCHEMA),
+        policy_schema=PolicySchema(SCHEMA),
+    )
+
+    assert '@id("sell_small_only")' in policies.as_cedar()
+    assert policies.cedar_schema()
 
 
 def test_schema_backed_lowering_requires_native_extension():

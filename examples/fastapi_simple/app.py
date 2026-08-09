@@ -15,6 +15,7 @@ EXAMPLE_DIR = Path(__file__).resolve().parent
 POLICY_SOURCE = (EXAMPLE_DIR / "policy.dw").read_text()
 QUOTA_POLICY_SOURCE = (EXAMPLE_DIR / "quota_policy.dw").read_text()
 SCHEMA_SOURCE = (EXAMPLE_DIR / "schema.cedarschema").read_text()
+EVENT_SCHEMA_SOURCE = (EXAMPLE_DIR / "event.dwschema").read_text()
 
 
 class AuthorizationRequest(BaseModel):
@@ -38,8 +39,16 @@ class QuotaAuthorizationResponse(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     native.require_available()
-    app.state.authorizer = native.NativeAuthorizer(POLICY_SOURCE, SCHEMA_SOURCE)
-    app.state.quota_authorizer = native.NativeAuthorizer(QUOTA_POLICY_SOURCE, SCHEMA_SOURCE)
+    app.state.authorizer = native.NativeAuthorizer(
+        POLICY_SOURCE,
+        SCHEMA_SOURCE,
+        EVENT_SCHEMA_SOURCE,
+    )
+    app.state.quota_authorizer = native.NativeAuthorizer(
+        QUOTA_POLICY_SOURCE,
+        SCHEMA_SOURCE,
+        EVENT_SCHEMA_SOURCE,
+    )
     app.state.authorizer_lock = Lock()
     app.state.quota_authorizer_lock = Lock()
     yield

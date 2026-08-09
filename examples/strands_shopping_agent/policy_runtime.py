@@ -11,6 +11,7 @@ from examples.strands_shopping_agent.cart_store import CART_ITEMS, shopping_cart
 from examples.strands_shopping_agent.config import (
     AGENT_POLICIES_DIR,
     PRODUCTS,
+    SHOPPING_EVENT_SCHEMA_SOURCE,
     RISK_MAPPING,
     SHOPPING_SCHEMA_SOURCE,
 )
@@ -101,6 +102,7 @@ def policy_intervention(policy_file: str, *, confirm_when: bool | str = False) -
     return DogwoodIntervention(
         policy_source=(AGENT_POLICIES_DIR / policy_file).read_text(),
         policy_schema_source=SHOPPING_SCHEMA_SOURCE,
+        event_schema_source=SHOPPING_EVENT_SCHEMA_SOURCE,
         confirm_when=confirm_when,
     )
 
@@ -123,6 +125,7 @@ def shopping_interventions() -> list[Any]:
             DogwoodIntervention(
                 policy_source=(AGENT_POLICIES_DIR / policy_file).read_text(),
                 policy_schema_source=SHOPPING_SCHEMA_SOURCE,
+                event_schema_source=SHOPPING_EVENT_SCHEMA_SOURCE,
                 confirm_when=(
                     "Approve this high-risk item?"
                     if policy_file == "item_risk_guardrail.dw"

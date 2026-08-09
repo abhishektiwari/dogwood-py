@@ -130,9 +130,9 @@ Dogwood has two schema layers:
   recorded in the temporal history, and which event kinds produce authorization
   decisions.
 
-The examples use Dogwood's default event schema. Under that default,
-`request` events are decision points, and the event history records request
-`input` fields plus reserved fields like `callerPrincipal`,
+If no event schema is supplied, Dogwood uses its default event schema. Under
+that default, `request` events are decision points, and the event history
+records request `input` fields plus reserved fields like `callerPrincipal`,
 `callerResource`, and `requestId`. That is why a temporal policy can ask about
 past events such as:
 
@@ -143,6 +143,16 @@ Drupe::Action::"Transfer"::request{ input.user: context.input.user }
 In other words, the Cedar schema says what a `Transfer` request looks like;
 the event schema says that `Transfer::request` is both authorizable and stored
 in history for later temporal checks.
+
+To supply an explicit `.dwschema`:
+
+```python
+from pathlib import Path
+from dogwood import LoweredPolicySet, ServiceSchema
+
+service = ServiceSchema(event_schema=Path("event.dwschema").read_text())
+policies = LoweredPolicySet.from_str(policy, service, policy_schema)
+```
 
 ## Python API
 
@@ -184,7 +194,8 @@ make example
 
 The FastAPI example uses the native binding and a real Cedar schema. It loads
 its own `examples/fastapi_simple/policy.dw` and
-`examples/fastapi_simple/schema.cedarschema`, creates a persistent
+`examples/fastapi_simple/schema.cedarschema` plus
+`examples/fastapi_simple/event.dwschema`, creates a persistent
 `native.NativeAuthorizer`, and exposes an authorization endpoint.
 
 The policy enforces a `$50` daily transfer limit per user. Three `$20`
@@ -266,6 +277,7 @@ two requests are allowed and the third is denied.
 dogwood-py validate policy.dw --policy-schema schema.cedarschema
 dogwood-py replay policy.dw --policy-schema schema.cedarschema --trace trace.log
 dogwood-py lower policy.dw --policy-schema schema.cedarschema
+dogwood-py replay policy.dw --policy-schema schema.cedarschema --event-schema event.dwschema --trace trace.log
 ```
 
 When using the local virtualenv directly:

@@ -13,7 +13,8 @@ when temporal {
             Drupe::Action::"CallTool"::request{
                 input.tool: "checkout_cart",
                 input.input.user: context.input.input.user,
-                input.input.amount: amount
+                input.input.amount: amount,
+                input.input.status: "completed"
             }
         )) == total
         && total <= 50

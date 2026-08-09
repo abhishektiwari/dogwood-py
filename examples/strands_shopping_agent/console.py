@@ -206,6 +206,16 @@ def first_known_item(words: list[str], default: str) -> str:
     return default
 
 
+def requested_item(words: list[str], default: str) -> str:
+    for word in words:
+        try:
+            int(word)
+            continue
+        except ValueError:
+            return word.strip()
+    return default
+
+
 def parse_quantity(words: list[str], default: int = 1) -> int:
     for word in words:
         try:
@@ -333,9 +343,25 @@ def run_interactive_console(user: str, session_id: str, cart_id: str, item_id: s
             continue
 
         if command == "add":
-            current_item = first_known_item(words[1:], current_item)
+            requested_item_id = requested_item(words[1:], current_item)
             quantity = parse_quantity(words[1:])
             sequence = next_tool_sequence(tool_use_counts, "add_to_cart")
+            add_event = build_shopping_tool_event(
+                "add_to_cart",
+                user=user,
+                session_id=session_id,
+                cart_id=cart_id,
+                item_id=requested_item_id,
+                quantity=quantity,
+                sequence=sequence,
+            )
+            precheck_message = apply_shopping_precheck(add_event)
+            if precheck_message is not None:
+                print(precheck_message)
+                continue
+
+            current_item = str(add_event.tool_use["input"]["item_id"])
+            quantity = int(add_event.tool_use["input"]["quantity"])
             if not session_access_allows(
                 interventions,
                 "add_to_cart",
@@ -381,9 +407,25 @@ def run_interactive_console(user: str, session_id: str, cart_id: str, item_id: s
             continue
 
         if command == "remove":
-            current_item = first_known_item(words[1:], current_item)
+            requested_item_id = requested_item(words[1:], current_item)
             quantity = parse_quantity(words[1:])
             sequence = next_tool_sequence(tool_use_counts, "remove_from_cart")
+            remove_event = build_shopping_tool_event(
+                "remove_from_cart",
+                user=user,
+                session_id=session_id,
+                cart_id=cart_id,
+                item_id=requested_item_id,
+                quantity=quantity,
+                sequence=sequence,
+            )
+            precheck_message = apply_shopping_precheck(remove_event)
+            if precheck_message is not None:
+                print(precheck_message)
+                continue
+
+            current_item = str(remove_event.tool_use["input"]["item_id"])
+            quantity = int(remove_event.tool_use["input"]["quantity"])
             allowed = session_access_allows(
                 interventions,
                 "remove_from_cart",
@@ -431,6 +473,21 @@ def run_interactive_console(user: str, session_id: str, cart_id: str, item_id: s
             print_checkout_summary(results)
             if all(allowed for _, allowed in results):
                 print(checkout_cart(user, session_id))
+                completed_sequence = next_tool_sequence(tool_use_counts, "checkout_cart")
+                completed_event = build_shopping_tool_event(
+                    "checkout_cart",
+                    user=user,
+                    session_id=session_id,
+                    cart_id=cart_id,
+                    item_id=str(policy_context["item_id"]),
+                    amount=int(policy_context["amount"]),
+                    quantity=int(policy_context["quantity"]),
+                    risk=int(policy_context["risk"]),
+                    status="completed",
+                    sequence=completed_sequence,
+                )
+                for completed_policy_file in ["daily_budget.dw", "daily_order_quota.dw"]:
+                    decision_for(interventions[completed_policy_file], completed_event)
             continue
 
         print(f"unknown command: {prompt}")

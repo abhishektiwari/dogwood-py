@@ -15,6 +15,7 @@ from examples.strands_shopping_agent.cart_store import (
 from examples.strands_shopping_agent.config import (
     AGENT_POLICIES_DIR,
     PRODUCTS,
+    SHOPPING_EVENT_SCHEMA_SOURCE,
     SHOPPING_SCHEMA_SOURCE,
 )
 from examples.strands_shopping_agent.console import (
@@ -104,6 +105,7 @@ __all__ = [
     "CART_ITEMS",
     "DogwoodIntervention",
     "SHOPPING_SCHEMA_SOURCE",
+    "SHOPPING_EVENT_SCHEMA_SOURCE",
     "add_to_cart",
     "build_agent",
     "build_shopping_tool_event",

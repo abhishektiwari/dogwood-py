@@ -7,8 +7,8 @@ The example loads shared temporal shopping policies from
 `examples/shopping_agent_policies`:
 
 - `daily_budget.dw` enforces a `$50` daily shopping budget per user.
-- `daily_order_quota.dw` permits fewer than three orders per user within one
-  day.
+- `daily_order_quota.dw` permits fewer than three completed orders per user
+  within one day.
 
 When Strands is installed, the example attaches one `DogwoodIntervention` per
 policy. Each intervention runs before tool execution and returns a typed
