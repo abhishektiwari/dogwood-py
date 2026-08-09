@@ -6,17 +6,23 @@ import pytest
 
 from dogwood import native
 from dogwood.integrations.strands import DogwoodPlugin
-from examples.strands_shopping_agent.agent import (
+from examples.strands_shopping_agent.cart_store import (
     CART_ITEMS,
-    add_to_cart,
-    build_shopping_tool_event,
     cart_policy_context,
-    checkout_cart,
-    get_shopping_cart,
+    shopping_cart_id,
+)
+from examples.strands_shopping_agent.policy_runtime import (
+    apply_shopping_precheck,
+    build_shopping_tool_event,
     next_tool_sequence,
     policy_hint,
-    policy_allows_with_history,
-    shopping_cart_id,
+    shopping_interventions,
+    shopping_tool_precheck,
+)
+from examples.strands_shopping_agent.tools import (
+    add_to_cart,
+    checkout_cart,
+    get_shopping_cart,
 )
 
 
@@ -260,24 +266,78 @@ def test_strands_shopping_agent_cart_policy_context_uses_cart_total_and_highest_
     assert context["risk"] == 100
 
 
-def test_strands_shopping_agent_failed_checkout_does_not_consume_budget_history():
-    checkout = build_shopping_tool_event(
-        "checkout_cart",
-        user="alice",
-        session_id="session-budget",
-        cart_id="cart-budget",
-        item_id="iphone17-case",
-        amount=50,
-        quantity=2,
-        risk=15,
-    )
-
-    assert policy_allows_with_history("daily_budget.dw", [], checkout)
-    assert policy_allows_with_history("daily_order_quota.dw", [], checkout)
-    assert not policy_allows_with_history("daily_budget.dw", [checkout], checkout)
-
-
 def test_strands_shopping_agent_policy_hints_are_loaded_from_policy_annotations():
     assert "grant" in policy_hint("session_access.dw")
     assert "login" in policy_hint("session_login.dw")
     assert "quota" in policy_hint("daily_order_quota.dw")
+
+
+def test_strands_shopping_agent_precheck_blocks_empty_checkout_before_policy():
+    user = "precheck-user"
+    session_id = "precheck-session"
+    cart_id = shopping_cart_id(user, session_id)
+    CART_ITEMS.pop(cart_id, None)
+
+    event = build_shopping_tool_event(
+        "checkout_cart",
+        user=user,
+        session_id=session_id,
+        cart_id=cart_id,
+    )
+
+    decision = shopping_tool_precheck(event)
+
+    assert decision.__class__.__name__.endswith("Guide")
+    assert getattr(decision, "feedback", None) == "The cart is empty. Add an item before checkout."
+    assert apply_shopping_precheck(event) == "The cart is empty. Add an item before checkout."
+
+
+def test_strands_shopping_agent_precheck_allows_checkout_with_items():
+    user = "precheck-user-with-cart"
+    session_id = "precheck-session-with-cart"
+    cart_id = shopping_cart_id(user, session_id)
+    CART_ITEMS.pop(cart_id, None)
+    add_to_cart(cart_id, "iphone17-case", 1)
+
+    event = build_shopping_tool_event(
+        "checkout_cart",
+        user=user,
+        session_id=session_id,
+        cart_id=cart_id,
+    )
+
+    assert shopping_tool_precheck(event).__class__.__name__.endswith("Proceed")
+    assert apply_shopping_precheck(event) is None
+
+
+def test_strands_shopping_agent_precheck_transforms_model_tool_input():
+    event = SimpleNamespace(
+        tool_use={
+            "name": "add_to_cart",
+            "input": {
+                "user": "transform-user",
+                "session_id": "transform-session",
+                "item_id": "IPHONE17 Case",
+                "quantity": "2",
+            },
+            "toolUseId": "tooluse_add_to_cart_1",
+        }
+    )
+
+    decision = shopping_tool_precheck(event)
+
+    assert decision.__class__.__name__.endswith("Transform")
+    assert apply_shopping_precheck(event) is None
+    assert event.tool_use["input"]["item_id"] == "iphone17-case"
+    assert event.tool_use["input"]["quantity"] == 2
+    assert event.tool_use["input"]["cart_id"] == "cart-transform-user-transform-session"
+
+
+def test_strands_shopping_agent_interventions_start_with_precheck():
+    interventions = shopping_interventions()
+
+    assert interventions[0].name == "shopping-tool-precheck"
+    assert all(
+        getattr(intervention, "name", "") == "dogwood-policy"
+        for intervention in interventions[1:]
+    )

@@ -14,6 +14,17 @@ When Strands is installed, the example attaches one `DogwoodIntervention` per
 policy. Each intervention runs before tool execution and returns a typed
 Strands decision such as proceed, deny, or confirm. The local console uses the
 same policies directly so the example remains runnable without Strands.
+Structural failures such as malformed tool input, unknown product ids, and
+empty checkout attempts are handled by an intervention precheck before Dogwood
+policy evaluation.
+
+The precheck uses Strands typed actions:
+
+- `transform(...)` normalizes model-generated tool input before policy checks,
+  such as converting `IPHONE17 Case` to `iphone17-case`, converting quantity
+  strings to integers, and deriving `cart_id` from `user` plus `session_id`.
+- `guide(...)` cancels a tool call and gives the model corrective feedback,
+  such as asking it to add an item before checkout or choose a valid product id.
 
 Run it from the repository root:
 
@@ -45,6 +56,19 @@ to the command.
 When checkout is blocked, the console prints only the controls that failed and
 the next action to take. Lifecycle commands such as `grant`, `login`,
 `approve`, and `step-up` are recorded as history events for Dogwood policies.
+
+## Structure
+
+The example is split so the Strands path stays close to normal SDK usage:
+
+```text
+agent.py          # thin entrypoint and Agent construction
+tools.py          # shopping tools
+cart_store.py     # in-memory cart/session state
+policy_runtime.py # DogwoodIntervention and policy-event helpers
+console.py        # local interactive simulation
+config.py         # product, risk, and policy file loading
+```
 
 ## Recommended Flows
 

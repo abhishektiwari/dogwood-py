@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -20,16 +20,21 @@ try:  # pragma: no cover - exercised only when the optional dependency exists
     from strands.interventions import (
         Confirm as _StrandsConfirm,
         Deny as _StrandsDeny,
+        Guide as _StrandsGuide,
         InterventionHandler as _StrandsInterventionHandler,
         Proceed as _StrandsProceed,
+        Transform as _StrandsTransform,
     )
 except ImportError:  # pragma: no cover - fallback is covered through behavior tests
     _StrandsConfirm = None
     _StrandsDeny = None
+    _StrandsGuide = None
     _StrandsInterventionHandler = object
     _StrandsProceed = None
+    _StrandsTransform = None
 
 ConfirmResolver = bool | str | Callable[[Any], bool | str | None]
+PrecheckResolver = Callable[[Any], Any | None]
 
 
 @dataclass(frozen=True)
@@ -51,12 +56,26 @@ class _FallbackConfirm:
     prompt: str
 
 
+@dataclass(frozen=True)
+class _FallbackGuide:
+    """Local stand-in used when Strands is not installed."""
+
+    feedback: str
+
+
+@dataclass(frozen=True)
+class _FallbackTransform:
+    """Local stand-in used when Strands is not installed."""
+
+    apply: Callable[[Any], Any]
+
+
 class DogwoodIntervention(_StrandsInterventionHandler):
     """Typed Strands intervention handler backed by Dogwood authorization.
 
-    ``before_tool_call`` returns Strands ``Proceed``, ``Deny``, or ``Confirm``
-    decisions when Strands is installed. Without Strands installed, it returns
-    small local stand-ins so the mapping behavior remains testable.
+    ``before_tool_call`` returns Strands typed decisions when Strands is
+    installed. Without Strands installed, it returns small local stand-ins so
+    the mapping behavior remains testable.
     """
 
     name = "dogwood-policy"
@@ -74,6 +93,7 @@ class DogwoodIntervention(_StrandsInterventionHandler):
         deny_message: str = "Dogwood policy denied this tool call.",
         confirm_when: ConfirmResolver = False,
         confirm_prompt: str = "Approve this Dogwood-controlled tool call?",
+        precheck: PrecheckResolver | Iterable[PrecheckResolver] | None = None,
     ) -> None:
         super().__init__()
         self.policy_hook = _build_policy_hook(
@@ -88,9 +108,15 @@ class DogwoodIntervention(_StrandsInterventionHandler):
         )
         self.confirm_when = confirm_when
         self.confirm_prompt = confirm_prompt
+        self.prechecks = _precheck_list(precheck)
 
     def before_tool_call(self, event: Any, **kwargs: Any) -> Any:
         """Authorize a Strands tool call and return a typed control decision."""
+        for precheck in self.prechecks:
+            precheck_decision = _precheck_decision(precheck, event, self.policy_hook.deny_message)
+            if precheck_decision is not None:
+                return precheck_decision
+
         if _is_allowed(_authorize_event(self.policy_hook, event)):
             return _proceed()
         confirm_prompt = _confirm_prompt(self.confirm_when, self.confirm_prompt, event)
@@ -103,6 +129,10 @@ def _proceed() -> Any:
     if _StrandsProceed is not None:
         return _StrandsProceed()
     return _FallbackProceed()
+
+
+def proceed() -> Any:
+    return _proceed()
 
 
 def _deny(message: str) -> Any:
@@ -121,6 +151,10 @@ def _deny(message: str) -> Any:
         return _StrandsDeny()
 
 
+def deny(message: str) -> Any:
+    return _deny(message)
+
+
 def _confirm(prompt: str) -> Any:
     if _StrandsConfirm is None:
         return _FallbackConfirm(prompt)
@@ -135,6 +169,75 @@ def _confirm(prompt: str) -> Any:
         return _StrandsConfirm(prompt)
     except TypeError:
         return _StrandsConfirm()
+
+
+def confirm(prompt: str) -> Any:
+    return _confirm(prompt)
+
+
+def _guide(feedback: str) -> Any:
+    if _StrandsGuide is None:
+        return _FallbackGuide(feedback)
+
+    for kwargs in ({"feedback": feedback}, {"message": feedback}, {"reason": feedback}):
+        try:
+            return _StrandsGuide(**kwargs)
+        except TypeError:
+            pass
+
+    try:
+        return _StrandsGuide(feedback)
+    except TypeError:
+        return _StrandsGuide()
+
+
+def guide(feedback: str) -> Any:
+    return _guide(feedback)
+
+
+def _transform(apply: Callable[[Any], Any]) -> Any:
+    if _StrandsTransform is None:
+        return _FallbackTransform(apply)
+
+    for kwargs in ({"apply": apply}, {"transform": apply}, {"fn": apply}):
+        try:
+            return _StrandsTransform(**kwargs)
+        except TypeError:
+            pass
+
+    try:
+        return _StrandsTransform(apply)
+    except TypeError:
+        return _StrandsTransform()
+
+
+def transform(apply: Callable[[Any], Any]) -> Any:
+    return _transform(apply)
+
+
+def _precheck_list(
+    precheck: PrecheckResolver | Iterable[PrecheckResolver] | None,
+) -> tuple[PrecheckResolver, ...]:
+    if precheck is None:
+        return ()
+    if callable(precheck):
+        return (precheck,)
+    return tuple(precheck)
+
+
+def _precheck_decision(
+    precheck: PrecheckResolver,
+    event: Any,
+    default_deny_message: str,
+) -> Any | None:
+    result = precheck(event)
+    if result is None or result is True:
+        return None
+    if result is False:
+        return _deny(default_deny_message)
+    if isinstance(result, str):
+        return _deny(result)
+    return result
 
 
 def _confirm_prompt(
@@ -156,4 +259,11 @@ def _confirm_prompt(
     return str(result)
 
 
-__all__ = ["DogwoodIntervention"]
+__all__ = [
+    "DogwoodIntervention",
+    "confirm",
+    "deny",
+    "guide",
+    "proceed",
+    "transform",
+]

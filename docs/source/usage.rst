@@ -284,6 +284,30 @@ return ``Confirm`` for human step-up approval.
        interventions=[dogwood_policy],
    )
 
+For structural checks that should happen before Dogwood policy evaluation, pass
+``precheck``. A precheck returns ``None`` or ``True`` to continue, ``False`` to
+deny with the intervention's default denial message, a string to deny with that
+message, or a typed decision such as ``confirm(...)``, ``guide(...)``, or
+``transform(...)``.
+
+.. code-block:: python
+
+   from dogwood.integrations.strands import DogwoodIntervention, guide
+
+   def require_cart_context(event):
+       tool_input = event.tool_use["input"]
+       if event.tool_use["name"] == "checkout_cart" and not tool_input.get("cart_id"):
+           return "checkout missing cart context"
+       if event.tool_use["name"] == "send_email" and not tool_input.get("subject"):
+           return guide("All emails must include a subject line.")
+       return None
+
+   dogwood_policy = DogwoodIntervention(
+       policy_source=policy_source,
+       policy_schema_source=cedar_schema_source,
+       precheck=require_cart_context,
+   )
+
 For step-up approval, pass ``confirm_when``. It can be ``True``, a prompt
 string, or a function that returns ``False``, ``True``, or a custom prompt.
 
