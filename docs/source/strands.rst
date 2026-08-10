@@ -6,9 +6,33 @@ Strands Agents Integration
    :keywords: Dogwood Strands Agents, dogwood-py Strands integration, agent tool authorization, agentic AI policy, Strands interventions
 
 Dogwood policies should usually guard Strands tool calls through interventions.
-Plugins and direct hooks are still available for lower-level integration. All
-three use ``BeforeToolCallEvent`` semantics: Dogwood authorizes the selected
-tool before Strands invokes it.
+Plugins and direct hooks are also available. All three surfaces support
+Strands lifecycle events; before-tool-call authorization remains the default so
+existing ``CallTool`` schemas do not accidentally deny invocation or model
+events.
+
+The implementation follows the Strands extension model:
+
+* ``DogwoodIntervention`` subclasses Strands' intervention handler and returns
+  typed actions.
+* ``DogwoodPlugin`` subclasses Strands' plugin base class and uses ``@hook`` so
+  Strands can auto-register lifecycle handlers from their event types.
+* ``lifecycle_hook`` exposes lower-level lifecycle hooks when you need direct
+  event mutation.
+
+Supported lifecycle names:
+
+* ``before_invocation``
+* ``after_invocation``
+* ``message_added``
+* ``before_model_call``
+* ``after_model_call``
+* ``before_tool_call``
+* ``after_tool_call``
+
+Before-events can block execution when Dogwood denies. After-events are
+observational by default because the work has already happened; use them to
+record outcomes into Dogwood temporal history or guide the next model step.
 
 Install the optional Strands dependency:
 
@@ -38,6 +62,25 @@ return ``Confirm`` for human step-up approval.
        tools=[search_tool, write_file],
        interventions=[dogwood_policy],
    )
+
+To evaluate more lifecycle stages, pass ``lifecycle_events``:
+
+.. code-block:: python
+
+   dogwood_policy = DogwoodIntervention(
+       policy_source=policy_source,
+       policy_schema_source=cedar_schema_source,
+       event_schema_source=event_schema_source,
+       lifecycle_events=(
+           "before_invocation",
+           "before_tool_call",
+           "after_tool_call",
+           "before_model_call",
+           "after_model_call",
+       ),
+   )
+
+Use ``lifecycle_events="all"`` to evaluate every supported lifecycle event.
 
 Structural checks that should happen before Dogwood policy evaluation belong in
 agent code as a separate intervention before ``DogwoodIntervention``. This is
@@ -89,7 +132,8 @@ Plugin
 ------
 
 Use ``DogwoodPlugin`` when you want Strands to discover and register decorated
-plugin hooks automatically.
+plugin hooks automatically. The plugin exposes hook methods for invocation,
+message, model, and tool lifecycle events.
 
 .. code-block:: python
 
@@ -103,6 +147,7 @@ plugin hooks automatically.
                policy_source=policy_source,
                policy_schema_source=cedar_schema_source,
                event_schema_source=event_schema_source,
+               lifecycle_events="all",
            )
        ],
    )
@@ -110,8 +155,8 @@ plugin hooks automatically.
 Direct hook
 -----------
 
-Use ``before_tool_call_hook`` if you need the lower-level hook object directly.
-Denied calls set ``event.cancel_tool``.
+Use ``before_tool_call_hook`` if you need the lower-level hook object directly
+for tool authorization. Denied calls set ``event.cancel_tool``.
 
 .. code-block:: python
 
@@ -155,6 +200,22 @@ The principal and resource can be supplied through Strands
 For framework-specific semantics, pass custom ``principal``, ``resource``, or
 ``input_mapper`` callbacks when constructing the hook.
 
+Use ``lifecycle_hook`` for direct access to all lifecycle stages:
+
+.. code-block:: python
+
+   from dogwood.integrations.strands import lifecycle_hook
+
+   dogwood_lifecycle = lifecycle_hook(
+       policy_source=policy_source,
+       policy_schema_source=cedar_schema_source,
+       event_schema_source=event_schema_source,
+       lifecycle_events="all",
+   )
+
+   dogwood_lifecycle.handle("before_invocation", event)
+   dogwood_lifecycle.handle("after_tool_call", event)
+
 Example
 -------
 
@@ -162,3 +223,4 @@ See :doc:`examples/strands-shopping-agent` for the runnable shopping-agent
 example. It uses framework-neutral policies from
 ``examples/shopping_agent_policies`` and Strands-specific wiring from
 ``examples/strands_shopping_agent``.
+

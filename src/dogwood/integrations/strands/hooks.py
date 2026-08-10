@@ -5,23 +5,41 @@ from typing import Any
 
 from dogwood import native
 from dogwood.integrations.strands.common import (
+    ALL_LIFECYCLE_EVENTS,
     IdentityResolver,
     InputMapper,
     _authorize_event,
+    _event_enabled,
     _is_allowed,
+    default_lifecycle_input,
     default_principal,
     default_resource,
     default_tool_input,
 )
 
+DEFAULT_LIFECYCLE_EVENTS: tuple[str, ...] = ("before_tool_call",)
+
+_CANCEL_ATTRS = {
+    "before_invocation": "cancel",
+    "before_model_call": "cancel",
+    "before_tool_call": "cancel_tool",
+}
+
 
 @dataclass
 class StrandsPolicyHook:
-    """Authorize Strands tool calls with a Dogwood native authorizer.
+    """Low-level Strands hook backed by a Dogwood native authorizer.
 
-    Register instances of this class as Strands hooks for ``BeforeToolCallEvent``.
-    If Dogwood denies the request, the hook sets ``event.cancel_tool`` with a
-    denial message, which prevents Strands from invoking the tool.
+    This is the lowest-level integration surface. Register it for
+    ``BeforeToolCallEvent`` when you want direct hook behavior instead of a
+    Strands plugin or intervention.
+
+    If Dogwood denies the request, the hook sets ``event.cancel_tool`` with
+    ``deny_message``. Strands then skips the selected tool.
+
+    Use this class when you need direct hook registration. Otherwise prefer
+    :class:`DogwoodIntervention` for typed decisions or :class:`DogwoodPlugin`
+    for Strands plugin auto-discovery.
     """
 
     authorizer: native.NativeAuthorizer
@@ -36,6 +54,58 @@ class StrandsPolicyHook:
             event.cancel_tool = self.deny_message
 
 
+@dataclass
+class StrandsLifecyclePolicyHook:
+    """Lifecycle-aware Strands hook backed by Dogwood authorization.
+
+    ``StrandsLifecyclePolicyHook`` supports every primary Strands agent
+    lifecycle event. It is opt-in per lifecycle to avoid accidentally applying
+    a tool policy to invocation or model events.
+
+    Before-events can be cancelled when Dogwood denies. After-events are
+    observed by calling Dogwood and then continue, because Strands does not
+    support hard denial after work has already happened.
+    """
+
+    authorizer: native.NativeAuthorizer
+    action: str = "Drupe::Action::CallTool"
+    principal: str | IdentityResolver = default_principal
+    resource: str | IdentityResolver = default_resource
+    tool_input_mapper: InputMapper = default_tool_input
+    lifecycle_input_mapper: InputMapper = default_lifecycle_input
+    lifecycle_events: tuple[str, ...] | str = DEFAULT_LIFECYCLE_EVENTS
+    deny_message: str = "Dogwood policy denied this lifecycle event."
+
+    def handle(self, lifecycle: str, event: Any) -> str:
+        """Evaluate a lifecycle event and return the Dogwood decision string."""
+        setattr(event, "dogwood_lifecycle", lifecycle)
+        if not _event_enabled(self.lifecycle_events, lifecycle):
+            return "Skipped"
+        decision = _authorize_event(self._policy_view(lifecycle), event)
+        if not _is_allowed(decision) and lifecycle in _CANCEL_ATTRS:
+            setattr(event, _CANCEL_ATTRS[lifecycle], self.deny_message)
+        return str(decision)
+
+    def _policy_view(self, lifecycle: str) -> Any:
+        mapper = self.tool_input_mapper if "tool_call" in lifecycle else self.lifecycle_input_mapper
+        return _PolicyView(
+            authorizer=self.authorizer,
+            action=self.action,
+            principal=self.principal,
+            resource=self.resource,
+            input_mapper=mapper,
+        )
+
+
+@dataclass(frozen=True)
+class _PolicyView:
+    authorizer: native.NativeAuthorizer
+    action: str
+    principal: str | IdentityResolver
+    resource: str | IdentityResolver
+    input_mapper: InputMapper
+
+
 def before_tool_call_hook(
     policy_source: str,
     policy_schema_source: str,
@@ -47,10 +117,12 @@ def before_tool_call_hook(
     input_mapper: InputMapper = default_tool_input,
     deny_message: str = "Dogwood policy denied this tool call.",
 ) -> StrandsPolicyHook:
-    """Create a Strands ``BeforeToolCallEvent`` hook backed by Dogwood.
+    """Create a low-level ``BeforeToolCallEvent`` hook backed by Dogwood.
 
     The native Dogwood authorizer is persistent, so policy parsing and lowering
-    happen once when this hook is constructed.
+    happen once when this hook is constructed. Prefer
+    :class:`dogwood.integrations.strands.DogwoodIntervention` for new
+    integrations that need typed Strands decisions.
     """
     return _build_policy_hook(
         policy_source,
@@ -88,6 +160,42 @@ def attach_before_tool_call_hook(agent: Any, hook: StrandsPolicyHook) -> None:
     raise TypeError("agent does not expose a supported Strands hook registration API")
 
 
+def lifecycle_hook(
+    policy_source: str,
+    policy_schema_source: str,
+    *,
+    event_schema_source: str | None = None,
+    action: str = "Drupe::Action::CallTool",
+    principal: str | IdentityResolver = default_principal,
+    resource: str | IdentityResolver = default_resource,
+    tool_input_mapper: InputMapper = default_tool_input,
+    lifecycle_input_mapper: InputMapper = default_lifecycle_input,
+    lifecycle_events: tuple[str, ...] | str = DEFAULT_LIFECYCLE_EVENTS,
+    deny_message: str = "Dogwood policy denied this lifecycle event.",
+) -> StrandsLifecyclePolicyHook:
+    """Create a lifecycle-aware Strands hook backed by Dogwood.
+
+    Pass ``lifecycle_events="all"`` to evaluate every supported lifecycle
+    event, or pass a tuple such as ``("before_invocation", "before_tool_call",
+    "after_tool_call")``.
+    """
+    authorizer = native.NativeAuthorizer(
+        policy_source,
+        policy_schema_source,
+        event_schema_source,
+    )
+    return StrandsLifecyclePolicyHook(
+        authorizer=authorizer,
+        action=action,
+        principal=principal,
+        resource=resource,
+        tool_input_mapper=tool_input_mapper,
+        lifecycle_input_mapper=lifecycle_input_mapper,
+        lifecycle_events=lifecycle_events,
+        deny_message=deny_message,
+    )
+
+
 def _build_policy_hook(
     policy_source: str | None,
     policy_schema_source: str | None,
@@ -123,7 +231,11 @@ def _build_policy_hook(
 
 
 __all__ = [
+    "ALL_LIFECYCLE_EVENTS",
+    "DEFAULT_LIFECYCLE_EVENTS",
+    "StrandsLifecyclePolicyHook",
     "StrandsPolicyHook",
     "attach_before_tool_call_hook",
     "before_tool_call_hook",
+    "lifecycle_hook",
 ]
