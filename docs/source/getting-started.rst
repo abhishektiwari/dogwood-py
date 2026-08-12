@@ -25,6 +25,41 @@ Every schema-backed Dogwood workflow follows the same pipeline:
 The native Python binding also exposes a convenience ``NativeAuthorizer``. It
 parses and lowers once, then handles repeated authorization calls.
 
+.. note::
+
+   If you use Codex, Claude Code, or another agentic coding assistant, you can
+   copy the Dogwood authoring skills from the Dogwood source repository and use
+   them while building schemas and policies.
+
+   The source skills live under
+   ``https://github.com/dogwood-policy/dogwood/tree/main/.claude/skills``.
+   Copy these skill folders into the skills directory used by your assistant,
+   preserving each folder name and its ``SKILL.md`` contents:
+
+   * ``dogwood``
+   * ``authoring-action-schema``
+   * ``authoring-service-schema``
+   * ``autoformalize-policies``
+
+   With Codex, that usually means copying them into ``$CODEX_HOME/skills`` or
+   ``~/.codex/skills``:
+
+   .. code-block:: bash
+
+      git clone https://github.com/dogwood-policy/dogwood.git /tmp/dogwood
+      mkdir -p ~/.codex/skills
+      cp -R /tmp/dogwood/.claude/skills/dogwood ~/.codex/skills/
+      cp -R /tmp/dogwood/.claude/skills/authoring-action-schema ~/.codex/skills/
+      cp -R /tmp/dogwood/.claude/skills/authoring-service-schema ~/.codex/skills/
+      cp -R /tmp/dogwood/.claude/skills/autoformalize-policies ~/.codex/skills/
+
+   Then invoke the skills in this order: ``$authoring-action-schema`` for the
+   Cedar ``.cedarschema`` action model, ``$authoring-service-schema`` when you
+   need a custom Dogwood ``.dwschema`` event model or providers, and
+   ``$autoformalize-policies`` to turn prose requirements into validated
+   ``.dw`` policies. Start with ``$dogwood`` when you are unsure which step
+   applies.
+
 Step 1 - Install
 ----------------
 
@@ -57,7 +92,7 @@ is standard Cedar ``.cedarschema`` text. This minimal schema has ``Login`` and
 
 .. code-block:: text
 
-   namespace Drupe {
+   namespace Agent {
      type LoginInput = { user: String };
      type LoginOutput = { success: Bool };
      type ReadInput = { user: String };
@@ -123,7 +158,7 @@ temporal policy can ask about past events such as:
 
 .. code-block:: text
 
-   Drupe::Action::"Transfer"::request{ input.user: context.input.user }
+   Agent::Action::"Transfer"::request{ input.user: context.input.user }
 
 In other words, the Cedar schema says what a ``Transfer`` request looks like;
 the event schema says that ``Transfer::request`` is both authorizable and
@@ -150,7 +185,7 @@ request.
    @id("permit_read_anyone")
    permit (
        principal,
-       action == Drupe::Action::"Read",
+       action == Agent::Action::"Read",
        resource
    );
 
@@ -171,9 +206,9 @@ policy is parsed and lowered once.
    )
 
    decision = authorizer.authorize_request(
-       "Drupe::Action::Read",
-       'Drupe::OAuthUser::"alice"',
-       'Drupe::Gateway::"gw1"',
+       "Agent::Action::Read",
+       'Agent::OAuthUser::"alice"',
+       'Agent::Gateway::"gw1"',
        {"user": "alice"},
    )
 
@@ -203,11 +238,11 @@ within the last hour.
    @id("read_after_login")
    permit (
        principal,
-       action == Drupe::Action::"Read",
+       action == Agent::Action::"Read",
        resource
    )
    when temporal {
-       formerly within 1h Drupe::Action::"Login"::response{
+       formerly within 1h Agent::Action::"Login"::response{
            input.user: context.input.user
        }
    };
@@ -220,10 +255,10 @@ Replay a trace with the native binding:
 .. code-block:: python
 
    trace = '''
-   @0 scope(principal: Drupe::OAuthUser::"alice", resource: Drupe::Gateway::"gw1") request_context(input: { user: "alice" }) Drupe::Action::"Login"::request(input: { user: "alice" }, callerPrincipal: Drupe::OAuthUser::"alice", callerResource: Drupe::Gateway::"gw1", requestId: "r1", sessionId: "s1")
-   @5 scope(principal: Drupe::OAuthUser::"alice", resource: Drupe::Gateway::"gw1") request_context(input: { user: "alice" }) Drupe::Action::"Login"::response(input: { user: "alice" }, output: { success: true }, callerPrincipal: Drupe::OAuthUser::"alice", callerResource: Drupe::Gateway::"gw1", requestId: "r1", sessionId: "s1")
-   @10 scope(principal: Drupe::OAuthUser::"alice", resource: Drupe::Gateway::"gw1") request_context(input: { user: "alice" }) Drupe::Action::"Read"::request(input: { user: "alice" }, callerPrincipal: Drupe::OAuthUser::"alice", callerResource: Drupe::Gateway::"gw1", requestId: "r2", sessionId: "s1")
-   @7200 scope(principal: Drupe::OAuthUser::"alice", resource: Drupe::Gateway::"gw1") request_context(input: { user: "alice" }) Drupe::Action::"Read"::request(input: { user: "alice" }, callerPrincipal: Drupe::OAuthUser::"alice", callerResource: Drupe::Gateway::"gw1", requestId: "r3", sessionId: "s1")
+   @0 scope(principal: Agent::OAuthUser::"alice", resource: Agent::Gateway::"gw1") request_context(input: { user: "alice" }) Agent::Action::"Login"::request(input: { user: "alice" }, callerPrincipal: Agent::OAuthUser::"alice", callerResource: Agent::Gateway::"gw1", requestId: "r1", sessionId: "s1")
+   @5 scope(principal: Agent::OAuthUser::"alice", resource: Agent::Gateway::"gw1") request_context(input: { user: "alice" }) Agent::Action::"Login"::response(input: { user: "alice" }, output: { success: true }, callerPrincipal: Agent::OAuthUser::"alice", callerResource: Agent::Gateway::"gw1", requestId: "r1", sessionId: "s1")
+   @10 scope(principal: Agent::OAuthUser::"alice", resource: Agent::Gateway::"gw1") request_context(input: { user: "alice" }) Agent::Action::"Read"::request(input: { user: "alice" }, callerPrincipal: Agent::OAuthUser::"alice", callerResource: Agent::Gateway::"gw1", requestId: "r2", sessionId: "s1")
+   @7200 scope(principal: Agent::OAuthUser::"alice", resource: Agent::Gateway::"gw1") request_context(input: { user: "alice" }) Agent::Action::"Read"::request(input: { user: "alice" }, callerPrincipal: Agent::OAuthUser::"alice", callerResource: Agent::Gateway::"gw1", requestId: "r3", sessionId: "s1")
    '''
 
    print(native.replay(
@@ -254,22 +289,27 @@ then run:
 
 .. code-block:: bash
 
-   dogwood-py validate policy.dw \
+   dogwood validate policy.dw \
      --policy-schema schema.cedarschema \
      --event-schema event.dwschema
 
-   dogwood-py replay policy.dw \
+   dogwood replay policy.dw \
      --policy-schema schema.cedarschema \
      --event-schema event.dwschema \
      --trace trace.log
 
-Checked-in runnable examples are available under ``examples/``:
+Runnable examples are packaged under ``examples/``. After installing
+``dogwood-py`` and any optional dependencies, run:
 
 .. code-block:: bash
 
-   make cli-example
-   make fastapi-example
-   make strands-shopping-agent
+   python -m examples.api_usage
+
+   python -m examples.cli
+
+   python -m uvicorn examples.fastapi_simple.app:app --host 127.0.0.1 --port 8000
+
+   python -m examples.strands_shopping_agent.agent --user alice
 
 Where To Go Next
 ----------------

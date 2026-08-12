@@ -4,6 +4,7 @@ from collections.abc import Callable, Collection, Mapping
 from typing import Any
 
 InputMapper = Callable[[Any], dict[str, Any]]
+ActionResolver = Callable[[Any], str]
 IdentityResolver = Callable[[Any], str]
 LifecycleEvent = str
 
@@ -19,10 +20,12 @@ ALL_LIFECYCLE_EVENTS: tuple[LifecycleEvent, ...] = (
 
 
 def default_tool_input(event: Any) -> dict[str, Any]:
-    """Build Dogwood ``CallTool`` input from a Strands tool-call event.
+    """Build Dogwood tool-call input from a Strands tool event.
 
     The default input shape is framework-neutral so the same Dogwood policy can
-    be reused by future agent integrations:
+    be reused by future agent integrations. It works with a generic
+    ``CallTool`` action and with schemas that map each tool name to a concrete
+    Cedar action:
 
     ``{"tool": name, "input": tool_input, "toolUseId": id}``
     """
@@ -67,18 +70,18 @@ def default_lifecycle_input(event: Any) -> dict[str, Any]:
 def default_principal(event: Any) -> str:
     """Resolve the Cedar principal from Strands ``invocation_state``."""
     state = getattr(event, "invocation_state", {}) or {}
-    return str(state.get("principal", 'Drupe::OAuthUser::"agent"'))
+    return str(state.get("principal", 'Agent::OAuthUser::"agent"'))
 
 
 def default_resource(event: Any) -> str:
     """Resolve the Cedar resource from Strands ``invocation_state``."""
     state = getattr(event, "invocation_state", {}) or {}
-    return str(state.get("resource", 'Drupe::Gateway::"agent"'))
+    return str(state.get("resource", 'Agent::Gateway::"agent"'))
 
 
 def _authorize_event(policy_hook: Any, event: Any) -> Any:
     return policy_hook.authorizer.authorize_request(
-        policy_hook.action,
+        _resolve(policy_hook.action, event),
         _resolve(policy_hook.principal, event),
         _resolve(policy_hook.resource, event),
         policy_hook.input_mapper(event),
@@ -133,6 +136,7 @@ def _resolve(value: str | IdentityResolver, event: Any) -> str:
 
 
 __all__ = [
+    "ActionResolver",
     "IdentityResolver",
     "InputMapper",
     "ALL_LIFECYCLE_EVENTS",

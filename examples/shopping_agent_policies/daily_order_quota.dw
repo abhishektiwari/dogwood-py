@@ -2,15 +2,14 @@
 @hint("daily order quota has been reached")
 permit (
     principal,
-    action == Drupe::Action::"CallTool",
+    action == Agent::Action::"CheckoutCart",
     resource
 )
 when temporal {
     exists (n: Long). (
         (count for (t: Timepoint). where (
             formerly within 1d (
-                Drupe::Action::"CallTool"::request{
-                    input.tool: "checkout_cart",
+                Agent::Action::"CheckoutCart"::request{
                     input.input.user: context.input.input.user,
                     input.input.status: "completed"
                 }

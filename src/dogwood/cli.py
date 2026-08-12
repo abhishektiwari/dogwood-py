@@ -10,7 +10,7 @@ from .trace import replay_log
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="dogwood-py")
+    parser = argparse.ArgumentParser(prog="dogwood")
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("check-parse", "validate", "lower", "replay"):
         p = sub.add_parser(name)

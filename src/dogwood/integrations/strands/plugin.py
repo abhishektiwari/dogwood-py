@@ -5,6 +5,7 @@ from typing import Any
 
 from dogwood import native
 from dogwood.integrations.strands.common import (
+    ActionResolver,
     IdentityResolver,
     InputMapper,
     default_lifecycle_input,
@@ -76,7 +77,7 @@ class DogwoodPlugin(_StrandsPlugin):
         *,
         event_schema_source: str | None = None,
         authorizer: native.NativeAuthorizer | None = None,
-        action: str = "Drupe::Action::CallTool",
+        action: str | ActionResolver = "Agent::Action::CallTool",
         principal: str | IdentityResolver = default_principal,
         resource: str | IdentityResolver = default_resource,
         input_mapper: InputMapper = default_tool_input,

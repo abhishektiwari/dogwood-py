@@ -2,7 +2,7 @@
 @hint("either daily budget is exceeded or cart total needs to be reduced so today's successful orders stay within daily budget")
 permit (
     principal,
-    action == Drupe::Action::"CallTool",
+    action == Agent::Action::"CheckoutCart",
     resource
 )
 when temporal {
@@ -10,8 +10,7 @@ when temporal {
         (sum_within(
             amount,
             1d,
-            Drupe::Action::"CallTool"::request{
-                input.tool: "checkout_cart",
+            Agent::Action::"CheckoutCart"::request{
                 input.input.user: context.input.input.user,
                 input.input.amount: amount,
                 input.input.status: "completed"

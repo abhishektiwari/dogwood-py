@@ -21,7 +21,7 @@ EVENT_SCHEMA_SOURCE = (EXAMPLE_DIR / "event.dwschema").read_text()
 class AuthorizationRequest(BaseModel):
     user: str = Field(examples=["alice"])
     amount: int = Field(ge=0, examples=[20])
-    resource: str = Field(default='Drupe::Gateway::"trading"')
+    resource: str = Field(default='Agent::Gateway::"trading"')
 
 
 class AuthorizationResponse(BaseModel):
@@ -67,8 +67,8 @@ def create_app() -> FastAPI:
         # underlying Rust authorizer on each decision, so serialize access.
         async with app.state.authorizer_lock:
             decision = app.state.authorizer.authorize_request(
-                "Drupe::Action::Transfer",
-                f'Drupe::OAuthUser::"{request.user}"',
+                "Agent::Action::Transfer",
+                f'Agent::OAuthUser::"{request.user}"',
                 request.resource,
                 {"amount": request.amount, "user": request.user},
             )
@@ -81,8 +81,8 @@ def create_app() -> FastAPI:
         # the dollar-volume endpoint above.
         async with app.state.quota_authorizer_lock:
             decision = app.state.quota_authorizer.authorize_request(
-                "Drupe::Action::Transfer",
-                f'Drupe::OAuthUser::"{request.user}"',
+                "Agent::Action::Transfer",
+                f'Agent::OAuthUser::"{request.user}"',
                 request.resource,
                 {"amount": request.amount, "user": request.user},
             )

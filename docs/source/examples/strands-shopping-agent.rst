@@ -9,11 +9,12 @@ The Strands example models a shopping agent protected by Dogwood policies for
 session access, login before checkout, checkout approval, high-risk item
 step-up, daily budget, daily order quota, and tool sequencing.
 
-Run it:
+Run it after installing the Strands dependency:
 
 .. code-block:: bash
 
-   make strands-shopping-agent ARGS="--user alice"
+   pip install "dogwood-py[strands]"
+   python -m examples.strands_shopping_agent.agent --user alice
 
 This opens an interactive console:
 

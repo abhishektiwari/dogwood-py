@@ -18,13 +18,12 @@ transfers by the same user produce:
 
    Allow, Allow, Deny
 
-Run it:
+Run it after installing the example dependencies:
 
 .. code-block:: bash
 
-   make develop
-   make examples-deps
-   make fastapi-example
+   pip install "dogwood-py[examples]"
+   python -m uvicorn examples.fastapi_simple.app:app --host 127.0.0.1 --port 8000
 
 First transfer:
 

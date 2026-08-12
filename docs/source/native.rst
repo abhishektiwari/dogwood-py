@@ -43,9 +43,9 @@ happens once:
    authorizer = native.NativeAuthorizer(policy_source, cedar_schema_source)
 
    decision = authorizer.authorize_request(
-       "Drupe::Action::SellShares",
-       'Drupe::OAuthUser::"alice"',
-       'Drupe::Gateway::"trading"',
+       "Agent::Action::SellShares",
+       'Agent::OAuthUser::"alice"',
+       'Agent::Gateway::"trading"',
        {"shares": 25, "stock": "AMZN"},
    )
 

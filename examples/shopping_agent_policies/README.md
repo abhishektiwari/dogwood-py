@@ -1,8 +1,9 @@
 # Shopping Agent Policies
 
 Framework-neutral Dogwood policies for a shopping agent. These files model
-agent tool calls as `Drupe::Action::"CallTool"` request events with a nested
-tool input payload:
+each agent tool as its own Cedar action under the shared
+`Agent::Action::"ShoppingTool"` action group. Every tool action uses the same
+nested input payload:
 
 ```json
 {
@@ -27,8 +28,9 @@ files are not Strands-specific and can be reused by future LangChain, CrewAI,
 or other agent framework adapters.
 
 `event.dwschema` defines the Dogwood event model used by these policies. In the
-current SDK, tool calls are modeled as `CallTool::request` decision events and
-successful checkout is represented by `input.input.status == "completed"`.
+current SDK, tool calls are modeled as concrete request actions such as
+`Agent::Action::"AddToCart"` and `Agent::Action::"CheckoutCart"`. Successful
+checkout is represented by `input.input.status == "completed"`.
 
 ## Policies
 

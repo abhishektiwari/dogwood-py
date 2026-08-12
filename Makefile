@@ -17,7 +17,7 @@ help:
 	@echo "  make test     Run tests"
 	@echo "  make perf-test  Run opt-in native-vs-Python performance test"
 	@echo "  make example  Run the API example"
-	@echo "  make cli-example  Run the dogwood-py CLI example"
+	@echo "  make cli-example  Run the dogwood CLI example"
 	@echo "  make fastapi-example  Run the native-backed FastAPI example"
 	@echo "  make strands-shopping-agent  Run the Strands shopping agent example"
 	@echo "  make docs     Build Sphinx HTML documentation"
@@ -54,7 +54,7 @@ example:
 	$(VENV_PYTHON) examples/api_usage.py
 
 cli-example:
-	$(VENV)/bin/dogwood-py replay examples/cli/policy.dw --policy-schema examples/cli/schema.cedarschema --trace examples/cli/trace.log
+	$(VENV)/bin/dogwood replay examples/cli/policy.dw --policy-schema examples/cli/schema.cedarschema --trace examples/cli/trace.log
 
 fastapi-example:
 	$(VENV_PYTHON) -m uvicorn examples.fastapi_simple.app:app --reload --host 127.0.0.1 --port 8000

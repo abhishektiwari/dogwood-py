@@ -2,14 +2,15 @@
 @hint("run login before checkout")
 permit (
     principal,
-    action == Drupe::Action::"CallTool",
+    action in [Agent::Action::"ShoppingTool"],
     resource
 )
+when {
+    context.input.tool != "login"
+}
 when temporal {
-    context.input.tool != "login" &&
     formerly within 1h (
-        Drupe::Action::"CallTool"::request{
-            input.tool: "login",
+        Agent::Action::"Login"::request{
             input.input.user: context.input.input.user,
             input.input.session_id: context.input.input.session_id
         }

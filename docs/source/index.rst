@@ -19,6 +19,11 @@ information, read the `Dogwood documentation <https://dogwood-policy.github.io/d
    Current Dogwood reference interpreter is not intended for production use;
    therefore, this Python SDK and PyO3 binding is experimental in nature.
 
+.. note::
+
+   This is an unofficial Python SDK and port for Dogwood Policy. Support is
+   provided on a best effort basis with community help.
+
 |github-release| |tests| |pypi-version| |python-wheels| |python-versions|
 |last-commit| |pypi-status| |conda-version| |license| |github-downloads|
 |pypi-downloads|

@@ -12,6 +12,7 @@ from examples.strands_shopping_agent.config import (
     AGENT_POLICIES_DIR,
     PRODUCTS,
     SHOPPING_EVENT_SCHEMA_SOURCE,
+    SHOPPING_ACTION,
     RISK_MAPPING,
     SHOPPING_SCHEMA_SOURCE,
 )
@@ -91,8 +92,8 @@ def build_shopping_tool_event(
             "toolUseId": derive_tool_use_id(user, session_id, cart_id, tool_name, sequence),
         },
         invocation_state={
-            "principal": f'Drupe::OAuthUser::"{user}"',
-            "resource": 'Drupe::Gateway::"shopping-agent"',
+            "principal": f'Agent::OAuthUser::"{user}"',
+            "resource": 'Agent::Gateway::"shopping-agent"',
             "session_id": session_id,
         },
     )
@@ -103,6 +104,7 @@ def policy_intervention(policy_file: str, *, confirm_when: bool | str = False) -
         policy_source=(AGENT_POLICIES_DIR / policy_file).read_text(),
         policy_schema_source=SHOPPING_SCHEMA_SOURCE,
         event_schema_source=SHOPPING_EVENT_SCHEMA_SOURCE,
+        action=SHOPPING_ACTION,
         confirm_when=confirm_when,
     )
 
@@ -126,6 +128,7 @@ def shopping_interventions() -> list[Any]:
                 policy_source=(AGENT_POLICIES_DIR / policy_file).read_text(),
                 policy_schema_source=SHOPPING_SCHEMA_SOURCE,
                 event_schema_source=SHOPPING_EVENT_SCHEMA_SOURCE,
+                action=SHOPPING_ACTION,
                 confirm_when=(
                     "Approve this high-risk item?"
                     if policy_file == "item_risk_guardrail.dw"

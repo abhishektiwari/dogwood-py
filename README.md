@@ -7,6 +7,9 @@ For full documentation, see **[dogwood-py.abhishek-tiwari.com](https://dogwood-p
 > ⚠️⚠️⚠️ Current Dogwood reference interpreter is not intended for production use;
 therefore, this Python SDK and PyO3 binding is experimental in nature.
 
+> **Note:** This is an unofficial Python SDK and port for Dogwood Policy.
+> Support is provided on a best effort basis with community help.
+
 ![GitHub Release](https://img.shields.io/github/v/release/abhishektiwari/dogwood-py)
 ![GitHub Actions Test Workflow Status](https://img.shields.io/github/actions/workflow/status/abhishektiwari/dogwood-py/test.yml?label=tests)
 ![PyPI - Version](https://img.shields.io/pypi/v/dogwood-py)
@@ -28,8 +31,9 @@ pip install dogwood-py
 Optional extras:
 
 ```bash
-pip install "dogwood-py[examples]"
-pip install "dogwood-py[strands]"
+pip install "dogwood-py[examples]"        # FastAPI and general examples
+pip install "dogwood-py[strands]"         # Strands integration and shopping-agent example
+pip install "dogwood-py[examples,strands]"
 ```
 
 The package installs as `dogwood`:
@@ -67,12 +71,16 @@ Dogwood language documentation is available at [dogwood-policy.github.io/dogwood
 ## Examples
 
 Checked-in examples are documented at [Examples](https://dogwood-py.abhishek-tiwari.com/examples/index.html).
+After installing the package and optional dependencies, run examples directly:
 
 ```bash
-make example
-make cli-example
-make fastapi-example
-make strands-shopping-agent
+python -m examples.api_usage
+
+python -m examples.cli
+
+python -m uvicorn examples.fastapi_simple.app:app --host 127.0.0.1 --port 8000
+
+python -m examples.strands_shopping_agent.agent --user alice
 ```
 
 ## Development

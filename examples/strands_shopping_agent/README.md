@@ -26,11 +26,11 @@ The precheck uses Strands typed actions:
 - `guide(...)` cancels a tool call and gives the model corrective feedback,
   such as asking it to add an item before checkout or choose a valid product id.
 
-Run it from the repository root:
+Run it after installing the Strands dependency:
 
 ```bash
-make develop
-make strands-shopping-agent ARGS="--user alice"
+pip install "dogwood-py[strands]"
+python -m examples.strands_shopping_agent.agent --user alice
 ```
 
 This opens an interactive console:

@@ -5,8 +5,8 @@ Examples
    :description: Runnable dogwood-py examples for the CLI, FastAPI native authorization service, and Strands shopping agent policy controls.
    :keywords: dogwood-py examples, Dogwood CLI, Dogwood FastAPI, Dogwood Strands shopping agent
 
-The repository includes runnable examples under ``examples/``. They use the
-same package API that installed users get from ``dogwood-py``.
+The package includes runnable examples under ``examples/``. They use the same
+public API that installed users get from ``dogwood-py``.
 
 .. toctree::
    :maxdepth: 1

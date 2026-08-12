@@ -1,4 +1,4 @@
-namespace Drupe {
+namespace Agent {
   type ShoppingToolArgs = {
     user: String,
     session_id: String,
@@ -11,7 +11,7 @@ namespace Drupe {
     status: String
   };
 
-  type CallToolInput = {
+  type ShoppingToolInput = {
     tool: String,
     input: ShoppingToolArgs,
     toolUseId: String
@@ -21,11 +21,91 @@ namespace Drupe {
 
   entity OAuthUser;
 
-  action "CallTool" appliesTo {
+  action "ShoppingTool" appliesTo {
     principal: [OAuthUser],
     resource: [Gateway],
     context: {
-      input: CallToolInput
+      input: ShoppingToolInput
+    }
+  };
+
+  action "GrantSession" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
+    }
+  };
+
+  action "RevokeSession" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
+    }
+  };
+
+  action "Login" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
+    }
+  };
+
+  action "ApproveCheckout" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
+    }
+  };
+
+  action "ApproveStepUp" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
+    }
+  };
+
+  action "GetShoppingCart" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
+    }
+  };
+
+  action "ListProducts" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
+    }
+  };
+
+  action "AddToCart" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
+    }
+  };
+
+  action "RemoveFromCart" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
+    }
+  };
+
+  action "CheckoutCart" in [Action::"ShoppingTool"] appliesTo {
+    principal: [OAuthUser],
+    resource: [Gateway],
+    context: {
+      input: ShoppingToolInput
     }
   };
 }

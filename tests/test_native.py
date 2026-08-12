@@ -9,7 +9,7 @@ POLICY = '''
 @id("sell_small_only")
 permit (
     principal,
-    action == Drupe::Action::"SellShares",
+    action == Agent::Action::"SellShares",
     resource
 )
 when { context.input.shares <= 50 };
@@ -17,7 +17,7 @@ when { context.input.shares <= 50 };
 
 
 SCHEMA = """
-namespace Drupe {
+namespace Agent {
   type SellSharesInput = {
     shares: Long,
     stock: String
@@ -107,9 +107,9 @@ def test_native_accepts_explicit_event_schema():
 
     assert (
         authorizer.authorize_request(
-            "Drupe::Action::SellShares",
-            'Drupe::OAuthUser::"alice"',
-            'Drupe::Gateway::"trading"',
+            "Agent::Action::SellShares",
+            'Agent::OAuthUser::"alice"',
+            'Agent::Gateway::"trading"',
             {"shares": 25, "stock": "AMZN"},
         )
         == "Allow"

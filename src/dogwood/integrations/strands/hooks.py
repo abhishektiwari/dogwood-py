@@ -5,6 +5,7 @@ from typing import Any
 
 from dogwood import native
 from dogwood.integrations.strands.common import (
+    ActionResolver,
     ALL_LIFECYCLE_EVENTS,
     IdentityResolver,
     InputMapper,
@@ -43,13 +44,18 @@ class StrandsPolicyHook:
     """
 
     authorizer: native.NativeAuthorizer
-    action: str = "Drupe::Action::CallTool"
+    action: str | ActionResolver = "Agent::Action::CallTool"
     principal: str | IdentityResolver = default_principal
     resource: str | IdentityResolver = default_resource
     input_mapper: InputMapper = default_tool_input
     deny_message: str = "Dogwood policy denied this tool call."
 
     def __call__(self, event: Any) -> None:
+        """Authorize one tool event.
+
+        ``action`` may be a fixed Cedar action or a resolver callback that
+        derives the action from the Strands tool event.
+        """
         if not _is_allowed(_authorize_event(self, event)):
             event.cancel_tool = self.deny_message
 
@@ -68,7 +74,7 @@ class StrandsLifecyclePolicyHook:
     """
 
     authorizer: native.NativeAuthorizer
-    action: str = "Drupe::Action::CallTool"
+    action: str | ActionResolver = "Agent::Action::CallTool"
     principal: str | IdentityResolver = default_principal
     resource: str | IdentityResolver = default_resource
     tool_input_mapper: InputMapper = default_tool_input
@@ -100,7 +106,7 @@ class StrandsLifecyclePolicyHook:
 @dataclass(frozen=True)
 class _PolicyView:
     authorizer: native.NativeAuthorizer
-    action: str
+    action: str | ActionResolver
     principal: str | IdentityResolver
     resource: str | IdentityResolver
     input_mapper: InputMapper
@@ -111,7 +117,7 @@ def before_tool_call_hook(
     policy_schema_source: str,
     *,
     event_schema_source: str | None = None,
-    action: str = "Drupe::Action::CallTool",
+    action: str | ActionResolver = "Agent::Action::CallTool",
     principal: str | IdentityResolver = default_principal,
     resource: str | IdentityResolver = default_resource,
     input_mapper: InputMapper = default_tool_input,
@@ -165,7 +171,7 @@ def lifecycle_hook(
     policy_schema_source: str,
     *,
     event_schema_source: str | None = None,
-    action: str = "Drupe::Action::CallTool",
+    action: str | ActionResolver = "Agent::Action::CallTool",
     principal: str | IdentityResolver = default_principal,
     resource: str | IdentityResolver = default_resource,
     tool_input_mapper: InputMapper = default_tool_input,
@@ -202,7 +208,7 @@ def _build_policy_hook(
     *,
     event_schema_source: str | None = None,
     authorizer: native.NativeAuthorizer | None = None,
-    action: str,
+    action: str | ActionResolver,
     principal: str | IdentityResolver,
     resource: str | IdentityResolver,
     input_mapper: InputMapper,
