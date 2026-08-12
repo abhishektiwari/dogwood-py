@@ -1,7 +1,7 @@
 @id("daily_transfer_limit")
 permit (
     principal,
-    action == Drupe::Action::"Transfer",
+    action == Agent::Action::"Transfer",
     resource
 )
 when temporal {
@@ -9,7 +9,7 @@ when temporal {
         (sum_within(
             amount,
             1d,
-            Drupe::Action::"Transfer"::request{
+            Agent::Action::"Transfer"::request{
                 input.user: context.input.user,
                 input.amount: amount
             }

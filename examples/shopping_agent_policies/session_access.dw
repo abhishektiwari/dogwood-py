@@ -2,21 +2,21 @@
 @hint("access required: run grant first")
 permit (
     principal,
-    action == Drupe::Action::"CallTool",
+    action in [Agent::Action::"ShoppingTool"],
     resource
 )
-when temporal {
+when {
     context.input.tool != "grant_session" &&
-    context.input.tool != "revoke_session" &&
+    context.input.tool != "revoke_session"
+}
+when temporal {
     (
-        !Drupe::Action::"CallTool"::request{
-            input.tool: "revoke_session",
+        !Agent::Action::"RevokeSession"::request{
             input.input.user: context.input.input.user,
             input.input.session_id: context.input.input.session_id
         }
         since within 1h
-        Drupe::Action::"CallTool"::request{
-            input.tool: "grant_session",
+        Agent::Action::"GrantSession"::request{
             input.input.user: context.input.input.user,
             input.input.session_id: context.input.input.session_id
         }

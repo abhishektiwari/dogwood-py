@@ -6,6 +6,7 @@ from typing import Any
 
 from dogwood import native
 from dogwood.integrations.strands.common import (
+    ActionResolver,
     IdentityResolver,
     InputMapper,
     _authorize_event,
@@ -104,6 +105,8 @@ class DogwoodIntervention(_StrandsInterventionHandler):
       instead of building one.
     * ``principal``, ``resource``, and ``input_mapper`` customize how Strands
       events are mapped into Dogwood authorization requests.
+    * ``action`` may be a fixed Cedar action string or a callback that resolves
+      the action from a Strands event, which supports one action per tool.
     * ``confirm_when`` turns Dogwood denials into Strands ``Confirm`` actions
       for selected tool calls.
     * ``lifecycle_events`` selects which lifecycle methods invoke Dogwood.
@@ -120,7 +123,7 @@ class DogwoodIntervention(_StrandsInterventionHandler):
         *,
         event_schema_source: str | None = None,
         authorizer: native.NativeAuthorizer | None = None,
-        action: str = "Drupe::Action::CallTool",
+        action: str | ActionResolver = "Agent::Action::CallTool",
         principal: str | IdentityResolver = default_principal,
         resource: str | IdentityResolver = default_resource,
         input_mapper: InputMapper = default_tool_input,

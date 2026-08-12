@@ -18,6 +18,7 @@ from dogwood.integrations.strands import (
     guide,
     transform,
 )
+from examples.strands_shopping_agent.config import SHOPPING_ACTION
 
 
 class FakeAuthorizer:
@@ -37,8 +38,8 @@ def test_strands_policy_hook_allows_tool_call():
     event = SimpleNamespace(
         tool_use={"name": "search", "input": {"query": "dogwood"}, "toolUseId": "t1"},
         invocation_state={
-            "principal": 'Drupe::OAuthUser::"alice"',
-            "resource": 'Drupe::Gateway::"agent"',
+            "principal": 'Agent::OAuthUser::"alice"',
+            "resource": 'Agent::Gateway::"agent"',
         },
     )
 
@@ -48,9 +49,9 @@ def test_strands_policy_hook_allows_tool_call():
     assert not hasattr(event, "cancel_tool")
     assert authorizer.calls == [
         (
-            "Drupe::Action::CallTool",
-            'Drupe::OAuthUser::"alice"',
-            'Drupe::Gateway::"agent"',
+            "Agent::Action::CallTool",
+            'Agent::OAuthUser::"alice"',
+            'Agent::Gateway::"agent"',
             {
                 "tool": "search",
                 "input": {"query": "dogwood"},
@@ -109,9 +110,9 @@ def test_dogwood_intervention_returns_proceed_for_allowed_tool_call():
     assert decision.__class__.__name__.endswith("Proceed")
     assert intervention.policy_hook.authorizer.calls == [
         (
-            "Drupe::Action::CallTool",
-            'Drupe::OAuthUser::"agent"',
-            'Drupe::Gateway::"agent"',
+            "Agent::Action::CallTool",
+            'Agent::OAuthUser::"agent"',
+            'Agent::Gateway::"agent"',
             {
                 "tool": "search",
                 "input": {},
@@ -119,6 +120,20 @@ def test_dogwood_intervention_returns_proceed_for_allowed_tool_call():
             },
         )
     ]
+
+
+def test_dogwood_intervention_accepts_callable_action_resolver():
+    authorizer = FakeAuthorizer("Allow")
+    intervention = DogwoodIntervention(
+        authorizer=authorizer,
+        action=lambda event: f'Demo::Action::"{event.tool_use["name"]}"',
+    )
+    event = SimpleNamespace(tool_use={"name": "search", "input": {}})
+
+    decision = intervention.before_tool_call(event)
+
+    assert decision.__class__.__name__.endswith("Proceed")
+    assert authorizer.calls[0][0] == 'Demo::Action::"search"'
 
 
 def test_dogwood_intervention_returns_deny_for_denied_tool_call():
@@ -148,9 +163,9 @@ def test_dogwood_intervention_supports_before_invocation_lifecycle():
     assert getattr(decision, "reason", None) == "Invocation denied by Dogwood."
     assert intervention.policy_hook.authorizer.calls == [
         (
-            "Drupe::Action::CallTool",
-            'Drupe::OAuthUser::"agent"',
-            'Drupe::Gateway::"agent"',
+            "Agent::Action::CallTool",
+            'Agent::OAuthUser::"agent"',
+            'Agent::Gateway::"agent"',
             {
                 "lifecycle": "before_invocation",
                 "invocationState": {"request_id": "r1"},
@@ -284,7 +299,7 @@ def test_dogwood_plugin_registers_lifecycle_methods():
     assert len(plugin.lifecycle_hook.authorizer.calls) == len(ALL_LIFECYCLE_EVENTS)
 
 
-def test_dogwood_plugin_default_action_matches_native_authorizer():
+def test_dogwood_plugin_supports_callable_action_with_native_authorizer():
     if not native.available():
         pytest.skip("native extension is not built")
 
@@ -293,6 +308,7 @@ def test_dogwood_plugin_default_action_matches_native_authorizer():
         policy_source=(examples_dir / "daily_budget.dw").read_text(),
         policy_schema_source=(examples_dir / "schema.cedarschema").read_text(),
         event_schema_source=(examples_dir / "event.dwschema").read_text(),
+        action=SHOPPING_ACTION,
     )
 
     allowed_event = SimpleNamespace(
@@ -307,13 +323,13 @@ def test_dogwood_plugin_default_action_matches_native_authorizer():
                 "amount": 20,
                 "quantity": 1,
                 "risk": 0,
-                    "status": "completed",
+                "status": "completed",
             },
             "toolUseId": "tool-use-1",
         },
         invocation_state={
-            "principal": 'Drupe::OAuthUser::"alice"',
-            "resource": 'Drupe::Gateway::"agent"',
+            "principal": 'Agent::OAuthUser::"alice"',
+            "resource": 'Agent::Gateway::"agent"',
         },
     )
     denied_event = SimpleNamespace(
@@ -328,13 +344,13 @@ def test_dogwood_plugin_default_action_matches_native_authorizer():
                 "amount": 40,
                 "quantity": 1,
                 "risk": 0,
-                    "status": "completed",
+                "status": "completed",
             },
             "toolUseId": "tool-use-2",
         },
         invocation_state={
-            "principal": 'Drupe::OAuthUser::"alice"',
-            "resource": 'Drupe::Gateway::"agent"',
+            "principal": 'Agent::OAuthUser::"alice"',
+            "resource": 'Agent::Gateway::"agent"',
         },
     )
 

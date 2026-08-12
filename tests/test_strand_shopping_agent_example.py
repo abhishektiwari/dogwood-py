@@ -20,6 +20,7 @@ from examples.strands_shopping_agent.policy_runtime import (
     shopping_interventions,
     shopping_tool_precheck,
 )
+from examples.strands_shopping_agent.config import SHOPPING_ACTION
 from examples.strands_shopping_agent.tools import (
     add_to_cart,
     checkout_cart,
@@ -32,6 +33,23 @@ SCHEMA_SOURCE = (EXAMPLES_DIR / "schema.cedarschema").read_text()
 EVENT_SCHEMA_SOURCE = (EXAMPLES_DIR / "event.dwschema").read_text()
 RISK_MAPPING = json.loads((EXAMPLES_DIR / "risk-mapping.json").read_text())
 PRODUCTS = json.loads((EXAMPLES_DIR / "products.json").read_text())
+
+
+def test_strands_shopping_agent_policies_validate_against_schema():
+    if not native.available():
+        pytest.skip("native extension is not built")
+
+    for policy_file in sorted(EXAMPLES_DIR.glob("*.dw")):
+        result = native.validate_policy(
+            policy_file.read_text(),
+            SCHEMA_SOURCE,
+            EVENT_SCHEMA_SOURCE,
+        )
+
+        assert result["passed"], (
+            f"{policy_file.name} failed validation: "
+            f"errors={result['errors']} warnings={result['warnings']}"
+        )
 
 
 def tool_call(
@@ -68,8 +86,8 @@ def tool_call(
             "toolUseId": tool_use_id,
         },
         invocation_state={
-            "principal": f'Drupe::OAuthUser::"{user}"',
-            "resource": 'Drupe::Gateway::"shopping-agent"',
+            "principal": f'Agent::OAuthUser::"{user}"',
+            "resource": 'Agent::Gateway::"shopping-agent"',
             "session_id": session_id,
         },
     )
@@ -92,6 +110,7 @@ def decisions_for_events(policy_file: str, events: list[object]) -> list[str]:
         policy_source=(EXAMPLES_DIR / policy_file).read_text(),
         policy_schema_source=SCHEMA_SOURCE,
         event_schema_source=EVENT_SCHEMA_SOURCE,
+        action=SHOPPING_ACTION,
     )
     return [decision_for(plugin, event) for event in events]
 

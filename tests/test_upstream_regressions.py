@@ -8,7 +8,7 @@ SIMPLE_POLICY = '''
 @id("sell_small_only")
 permit (
     principal,
-    action == Drupe::Action::"SellShares",
+    action == Agent::Action::"SellShares",
     resource
 )
 when { context.input.shares <= 50 };
@@ -19,17 +19,17 @@ TEMPORAL_POLICY = '''
 @id("sell_after_prior_small_sell")
 permit (
     principal,
-    action == Drupe::Action::"SellShares",
+    action == Agent::Action::"SellShares",
     resource
 )
 when temporal {
-    formerly within 1h Drupe::Action::"SellShares"::request{ input.stock: context.input.stock }
+    formerly within 1h Agent::Action::"SellShares"::request{ input.stock: context.input.stock }
 };
 '''
 
 
 SCHEMA = """
-namespace Drupe {
+namespace Agent {
   type SellSharesInput = {
     shares: Long,
     stock: String
@@ -97,14 +97,14 @@ def test_malformed_trace_lines_raise_parse_error(line):
 def test_deeply_nested_trace_value_is_clean_error_not_crash():
     depth = 2_000
     nested = "[" * depth + "]" * depth
-    line = f'@0 Drupe::Action::"SellShares"::request(input: {nested})'
+    line = f'@0 Agent::Action::"SellShares"::request(input: {nested})'
 
     with pytest.raises(ParseError):
         parse_trace(line)
 
 
 def test_shallow_nested_trace_value_still_parses():
-    line = '@0 Drupe::Action::"SellShares"::request(input: { meta: [1, 2, { label: "ok" }] })'
+    line = '@0 Agent::Action::"SellShares"::request(input: { meta: [1, 2, { label: "ok" }] })'
     events = parse_trace(line)
     assert len(events) == 1
     assert events[0].field("input", "meta") == [1, 2, {"label": "ok"}]

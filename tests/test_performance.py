@@ -71,13 +71,13 @@ def _trace(count: int) -> str:
         user = f"user{i}"
         stock = "AMZN" if i % 3 == 0 else "MSFT"
         lines.append(
-            f'@{i} scope(principal: Drupe::OAuthUser::"{user}", '
-            'resource: Drupe::Gateway::"trading") '
+            f'@{i} scope(principal: Agent::OAuthUser::"{user}", '
+            'resource: Agent::Gateway::"trading") '
             f'request_context(input: {{ shares: {shares}, stock: "{stock}" }}) '
-            f'Drupe::Action::"SellShares"::request('
+            f'Agent::Action::"SellShares"::request('
             f'input: {{ shares: {shares}, stock: "{stock}" }}, '
-            f'callerPrincipal: Drupe::OAuthUser::"{user}", '
-            'callerResource: Drupe::Gateway::"trading", '
+            f'callerPrincipal: Agent::OAuthUser::"{user}", '
+            'callerResource: Agent::Gateway::"trading", '
             f'requestId: "u{i}")'
         )
     return "\n".join(lines)
@@ -104,9 +104,9 @@ def _native_authorize_with(authorizer: native.NativeAuthorizer, requests: list[d
     for request in requests:
         decisions.append(
             authorizer.authorize_request(
-                "Drupe::Action::SellShares",
-                f'Drupe::OAuthUser::"{request["user"]}"',
-                'Drupe::Gateway::"trading"',
+                "Agent::Action::SellShares",
+                f'Agent::OAuthUser::"{request["user"]}"',
+                'Agent::Gateway::"trading"',
                 {"shares": request["shares"], "stock": request["stock"]},
             )
         )
@@ -122,9 +122,9 @@ def _python_authorize_with(authorizer: Authorizer, requests: list[dict[str, obje
     decisions = []
     for request in requests:
         event = (
-            Event.builder('Drupe::Action::"SellShares"', "request")
-            .principal(f'Drupe::OAuthUser::"{request["user"]}"')
-            .resource('Drupe::Gateway::"trading"')
+            Event.builder('Agent::Action::"SellShares"', "request")
+            .principal(f'Agent::OAuthUser::"{request["user"]}"')
+            .resource('Agent::Gateway::"trading"')
             .field("input", "shares", request["shares"])
             .field("input", "stock", request["stock"])
             .request_context("input", "shares", request["shares"])

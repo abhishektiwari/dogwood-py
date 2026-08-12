@@ -34,11 +34,6 @@ Before-events can block execution when Dogwood denies. After-events are
 observational by default because the work has already happened; use them to
 record outcomes into Dogwood temporal history or guide the next model step.
 
-Install the optional Strands dependency:
-
-.. code-block:: bash
-
-   pip install "dogwood-py[strands]"
 
 Intervention handler
 --------------------
@@ -184,8 +179,8 @@ The default hook maps a Strands tool call into Dogwood input like this:
        "toolUseId": event.tool_use.get("toolUseId", ""),
    }
 
-The default request action is ``Drupe::Action::CallTool``. The Dogwood policy
-source still refers to the Cedar action as ``Drupe::Action::"CallTool"``.
+The default request action is ``Agent::Action::CallTool``. The Dogwood policy
+source still refers to the Cedar action as ``Agent::Action::"CallTool"``.
 The principal and resource can be supplied through Strands
 ``invocation_state``:
 
@@ -193,12 +188,33 @@ The principal and resource can be supplied through Strands
 
    agent(
        "research Dogwood policy examples",
-       principal='Drupe::OAuthUser::"alice"',
-       resource='Drupe::Gateway::"agent"',
+       principal='Agent::OAuthUser::"alice"',
+       resource='Agent::Gateway::"agent"',
    )
 
 For framework-specific semantics, pass custom ``principal``, ``resource``, or
 ``input_mapper`` callbacks when constructing the hook.
+
+Prefer one Cedar action per agent tool for production schemas. ``action`` may be
+a fixed string or a callback that maps the Strands event to the concrete
+Dogwood action:
+
+.. code-block:: python
+
+   TOOL_ACTIONS = {
+       "add_to_cart": "Agent::Action::AddToCart",
+       "checkout_cart": "Agent::Action::CheckoutCart",
+   }
+
+   def shopping_action(event):
+       return TOOL_ACTIONS[event.tool_use["name"]]
+
+   dogwood_policy = DogwoodIntervention(
+       policy_source=policy_source,
+       policy_schema_source=cedar_schema_source,
+       event_schema_source=event_schema_source,
+       action=shopping_action,
+   )
 
 Use ``lifecycle_hook`` for direct access to all lifecycle stages:
 
@@ -223,4 +239,3 @@ See :doc:`examples/strands-shopping-agent` for the runnable shopping-agent
 example. It uses framework-neutral policies from
 ``examples/shopping_agent_policies`` and Strands-specific wiring from
 ``examples/strands_shopping_agent``.
-

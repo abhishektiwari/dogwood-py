@@ -43,6 +43,7 @@ Repository = "https://github.com/abhishektiwari/dogwood-py"
 Source = "https://github.com/abhishektiwari/dogwood-py"
 
 [project.scripts]
+dogwood = "dogwood.cli:main"
 dogwood-py = "dogwood.cli:main"
 
 [project.optional-dependencies]
@@ -74,6 +75,24 @@ features = ["pyo3/extension-module"]
 include = [
   { path = "LICENSE", format = "sdist" },
   { path = "NOTICE", format = "sdist" },
+  { path = "src/dogwood/_version.py", format = "wheel" },
+  { path = "src/dogwood/_version.py", format = "sdist" },
+  { path = "examples/__init__.py", format = "wheel" },
+  { path = "examples/api_usage.py", format = "wheel" },
+  { path = "examples/cli/*.py", format = "wheel" },
+  { path = "examples/cli/*", format = "wheel" },
+  { path = "examples/fastapi_simple/*.py", format = "wheel" },
+  { path = "examples/fastapi_simple/*.dw", format = "wheel" },
+  { path = "examples/fastapi_simple/*.dwschema", format = "wheel" },
+  { path = "examples/fastapi_simple/*.cedarschema", format = "wheel" },
+  { path = "examples/fastapi_simple/README.md", format = "wheel" },
+  { path = "examples/shopping_agent_policies/*.dw", format = "wheel" },
+  { path = "examples/shopping_agent_policies/*.dwschema", format = "wheel" },
+  { path = "examples/shopping_agent_policies/*.cedarschema", format = "wheel" },
+  { path = "examples/shopping_agent_policies/*.json", format = "wheel" },
+  { path = "examples/shopping_agent_policies/README.md", format = "wheel" },
+  { path = "examples/strands_shopping_agent/*.py", format = "wheel" },
+  { path = "examples/strands_shopping_agent/README.md", format = "wheel" },
 ]
 
 [tool.setuptools_scm]

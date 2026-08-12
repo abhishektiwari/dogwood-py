@@ -1,8 +1,8 @@
 """Use dogwood-py as a Python SDK.
 
-Run from the repository root:
+Run from a source checkout or installed wheel:
 
-    PYTHONPATH=src python examples/api_usage.py
+    python -m examples.api_usage
 """
 
 from dogwood import Authorizer, Event, LoweredPolicySet, PolicySchema, ServiceSchema, Validator
@@ -12,7 +12,7 @@ POLICY = """
 @id("sell_small_only")
 permit (
     principal,
-    action == Drupe::Action::"SellShares",
+    action == Agent::Action::"SellShares",
     resource
 )
 when { context.input.shares <= 50 };
@@ -21,9 +21,9 @@ when { context.input.shares <= 50 };
 
 def sell_request(user: str, shares: int, stock: str) -> Event:
     return (
-        Event.builder('Drupe::Action::"SellShares"', "request")
-        .principal(f'Drupe::OAuthUser::"{user}"')
-        .resource('Drupe::Gateway::"trading"')
+        Event.builder('Agent::Action::"SellShares"', "request")
+        .principal(f'Agent::OAuthUser::"{user}"')
+        .resource('Agent::Gateway::"trading"')
         .field("input", "shares", shares)
         .field("input", "stock", stock)
         .request_context("input", "shares", shares)

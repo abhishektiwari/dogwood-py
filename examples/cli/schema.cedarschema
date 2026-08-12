@@ -1,4 +1,4 @@
-namespace Drupe {
+namespace Agent {
   type SellSharesInput = {
     shares: Long,
     stock: String

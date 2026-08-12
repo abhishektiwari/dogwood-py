@@ -1,4 +1,4 @@
-namespace Drupe {
+namespace Agent {
   type TransferInput = {
     amount: Long,
     user: String

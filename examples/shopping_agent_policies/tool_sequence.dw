@@ -2,14 +2,12 @@
 @hint("add an item to the cart before checkout")
 permit (
     principal,
-    action == Drupe::Action::"CallTool",
+    action == Agent::Action::"CheckoutCart",
     resource
 )
 when temporal {
-    context.input.tool == "checkout_cart" &&
     formerly within 1h (
-        Drupe::Action::"CallTool"::request{
-            input.tool: "add_to_cart",
+        Agent::Action::"AddToCart"::request{
             input.input.user: context.input.input.user,
             input.input.cart_id: context.input.input.cart_id,
             input.input.item_id: context.input.input.item_id

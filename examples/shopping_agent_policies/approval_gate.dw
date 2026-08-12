@@ -2,14 +2,12 @@
 @hint("run approve before checkout")
 permit (
     principal,
-    action == Drupe::Action::"CallTool",
+    action == Agent::Action::"CheckoutCart",
     resource
 )
 when temporal {
-    context.input.tool == "checkout_cart" &&
     formerly within 1h (
-        Drupe::Action::"CallTool"::request{
-            input.tool: "approve_checkout",
+        Agent::Action::"ApproveCheckout"::request{
             input.input.user: context.input.input.user,
             input.input.cart_id: context.input.input.cart_id,
             input.input.status: "approved"

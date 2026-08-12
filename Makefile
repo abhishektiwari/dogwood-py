@@ -1,4 +1,4 @@
-.PHONY: help setup activate deactivate develop examples-deps test perf-test example cli-example fastapi-example strands-shopping-agent docs docs-ci docs-watch build sdist clean
+.PHONY: help setup activate deactivate develop examples-deps test perf-test example cli-example fastapi-example strands-shopping-agent docs docs-ci docs-watch version-file build sdist clean
 
 PYTHON ?= python
 VENV ?= .venv
@@ -17,12 +17,13 @@ help:
 	@echo "  make test     Run tests"
 	@echo "  make perf-test  Run opt-in native-vs-Python performance test"
 	@echo "  make example  Run the API example"
-	@echo "  make cli-example  Run the dogwood-py CLI example"
+	@echo "  make cli-example  Run the dogwood CLI example"
 	@echo "  make fastapi-example  Run the native-backed FastAPI example"
 	@echo "  make strands-shopping-agent  Run the Strands shopping agent example"
 	@echo "  make docs     Build Sphinx HTML documentation"
 	@echo "  make docs-ci  Install docs-only deps and build Sphinx HTML documentation"
 	@echo "  make docs-watch  Rebuild and serve docs while files change"
+	@echo "  make version-file  Generate src/dogwood/_version.py"
 	@echo "  make build    Build wheel"
 	@echo "  make sdist    Build source distribution"
 	@echo "  make clean    Remove generated caches and Rust build output"
@@ -38,23 +39,23 @@ activate:
 deactivate:
 	@echo "Run: deactivate"
 
-develop: setup
+develop: setup version-file
 	$(MATURIN) develop
 
 examples-deps: setup
 	$(VENV_PYTHON) -m pip install fastapi 'uvicorn[standard]' httpx2
 
-test:
+test: version-file
 	$(VENV_PYTHON) -m pytest -q
 
 perf-test:
 	DOGWOOD_PERF_TESTS=1 $(VENV_PYTHON) -m pytest -q tests/test_performance.py -s
 
-example:
+example: version-file
 	$(VENV_PYTHON) examples/api_usage.py
 
-cli-example:
-	$(VENV)/bin/dogwood-py replay examples/cli/policy.dw --policy-schema examples/cli/schema.cedarschema --trace examples/cli/trace.log
+cli-example: version-file
+	$(VENV)/bin/dogwood replay examples/cli/policy.dw --policy-schema examples/cli/schema.cedarschema --trace examples/cli/trace.log
 
 fastapi-example:
 	$(VENV_PYTHON) -m uvicorn examples.fastapi_simple.app:app --reload --host 127.0.0.1 --port 8000
@@ -62,20 +63,24 @@ fastapi-example:
 strands-shopping-agent:
 	PYTHONPATH=src $(VENV_PYTHON) -m examples.strands_shopping_agent.agent $(or $(ARGS),--user alice)
 
-docs:
+docs: version-file
 	$(VENV_PYTHON) -m sphinx -E -b html docs/source docs/build/html
 
 docs-ci:
 	$(PYTHON) -m pip install -r docs/requirements.txt
+	test -f src/dogwood/_version.py || $(PYTHON) tools/write_version_file.py
 	PYTHONPATH=src $(PYTHON) -m sphinx -E -b html docs/source docs/build/html
 
 docs-watch:
 	$(VENV_PYTHON) -m sphinx_autobuild docs/source docs/build/html --host 127.0.0.1 --port 8001
 
-build:
+version-file:
+	test -f src/dogwood/_version.py || $(VENV_PYTHON) tools/write_version_file.py
+
+build: version-file
 	$(MATURIN) build $(BUILD_ARGS)
 
-sdist:
+sdist: version-file
 	$(MATURIN) sdist $(SDIST_ARGS)
 
 clean:
