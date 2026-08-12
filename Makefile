@@ -1,4 +1,4 @@
-.PHONY: help setup activate deactivate develop examples-deps test perf-test example cli-example fastapi-example strands-shopping-agent docs docs-ci docs-watch version-file build sdist clean
+.PHONY: help setup activate deactivate develop examples-deps test perf-test example cli-example fastapi-example strands-shopping-agent docs docs-ci docs-watch build sdist clean
 
 PYTHON ?= python
 VENV ?= .venv
@@ -23,7 +23,6 @@ help:
 	@echo "  make docs     Build Sphinx HTML documentation"
 	@echo "  make docs-ci  Install docs-only deps and build Sphinx HTML documentation"
 	@echo "  make docs-watch  Rebuild and serve docs while files change"
-	@echo "  make version-file  Generate src/dogwood/_version.py"
 	@echo "  make build    Build wheel"
 	@echo "  make sdist    Build source distribution"
 	@echo "  make clean    Remove generated caches and Rust build output"
@@ -39,22 +38,22 @@ activate:
 deactivate:
 	@echo "Run: deactivate"
 
-develop: setup version-file
+develop: setup
 	$(MATURIN) develop
 
 examples-deps: setup
 	$(VENV_PYTHON) -m pip install fastapi 'uvicorn[standard]' httpx2
 
-test: version-file
+test:
 	$(VENV_PYTHON) -m pytest -q
 
 perf-test:
 	DOGWOOD_PERF_TESTS=1 $(VENV_PYTHON) -m pytest -q tests/test_performance.py -s
 
-example: version-file
+example:
 	$(VENV_PYTHON) examples/api_usage.py
 
-cli-example: version-file
+cli-example:
 	$(VENV)/bin/dogwood replay examples/cli/policy.dw --policy-schema examples/cli/schema.cedarschema --trace examples/cli/trace.log
 
 fastapi-example:
@@ -63,24 +62,20 @@ fastapi-example:
 strands-shopping-agent:
 	PYTHONPATH=src $(VENV_PYTHON) -m examples.strands_shopping_agent.agent $(or $(ARGS),--user alice)
 
-docs: version-file
+docs:
 	$(VENV_PYTHON) -m sphinx -E -b html docs/source docs/build/html
 
 docs-ci:
 	$(PYTHON) -m pip install -r docs/requirements.txt
-	test -f src/dogwood/_version.py || $(PYTHON) tools/write_version_file.py
 	PYTHONPATH=src $(PYTHON) -m sphinx -E -b html docs/source docs/build/html
 
 docs-watch:
 	$(VENV_PYTHON) -m sphinx_autobuild docs/source docs/build/html --host 127.0.0.1 --port 8001
 
-version-file:
-	test -f src/dogwood/_version.py || $(VENV_PYTHON) tools/write_version_file.py
-
-build: version-file
+build:
 	$(MATURIN) build $(BUILD_ARGS)
 
-sdist: version-file
+sdist:
 	$(MATURIN) sdist $(SDIST_ARGS)
 
 clean:
