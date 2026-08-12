@@ -16,6 +16,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  NODE_OPTIONS: --use-system-ca
+
 jobs:
   generate-version:
     name: Generate version
