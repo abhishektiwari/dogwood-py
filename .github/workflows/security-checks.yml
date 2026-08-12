@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  NODE_OPTIONS: --use-system-ca
+
 jobs:
   actionlint:
     name: Actionlint

@@ -5,6 +5,7 @@ API Reference
    :toctree: generated
 
    dogwood.native
+   dogwood.enforcement
    dogwood.integrations.strands
    dogwood.policy
    dogwood.trace

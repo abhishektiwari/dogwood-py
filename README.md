@@ -55,7 +55,11 @@ The public API follows the Rust `dogwood-language` lifecycle:
 
 The native path uses PyO3/maturin to call the Rust Dogwood reference implementation for schema-backed lowering, validation, trace replay, augmented Cedar schema export, and authorization. A temporary pure-Python fallback remains only for limited schema-less examples.
 
-dogwood-py also provides optional Strands Agents support. Dogwood policies can be attached as Strands interventions so tool calls are checked before execution, with typed outcomes such as proceed, deny, guide, confirm, and transform.
+The Python SDK includes a [`PolicyEnforcer`](https://dogwood-py.abhishek-tiwari.com/generated/dogwood.enforcement.html) wrapper with `mode="enforce"` and `mode="log_only"` for rollout and audit behavior. Dogwood still evaluates the policy; the SDK mode controls whether a denied decision blocks the operation or is reported as `would_have_denied`.
+
+`dogwood-py` also provides optional Strands Agents support. Dogwood policies can be attached as Strands interventions so tool calls are checked before execution, with typed outcomes such as proceed, deny, guide, confirm, and transform.
+
+Strands integrations use the same SDK-level `enforce` and `log_only` modes on top of the Rust Dogwood policy decision.
 
 ## Documentation
 
@@ -63,6 +67,7 @@ dogwood-py also provides optional Strands Agents support. Dogwood policies can b
 - [Getting Started](https://dogwood-py.abhishek-tiwari.com/getting-started.html)
 - [Native Rust Binding](https://dogwood-py.abhishek-tiwari.com/native.html)
 - [Strands Agents Integration](https://dogwood-py.abhishek-tiwari.com/strands.html)
+- [PolicyEnforcer API](https://dogwood-py.abhishek-tiwari.com/generated/dogwood.enforcement.html)
 - [Examples](https://dogwood-py.abhishek-tiwari.com/examples/index.html)
 - [API Reference](https://dogwood-py.abhishek-tiwari.com/api.html)
 

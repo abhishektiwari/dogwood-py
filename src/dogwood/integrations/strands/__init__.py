@@ -14,6 +14,7 @@ and lowering happen once per integration object.
 
 from dogwood.integrations.strands.common import (
     ActionResolver,
+    EnforcementMode,
     IdentityResolver,
     InputMapper,
     default_lifecycle_input,
@@ -46,6 +47,7 @@ __all__ = [
     "ALL_LIFECYCLE_EVENTS",
     "DEFAULT_LIFECYCLE_EVENTS",
     "ActionResolver",
+    "EnforcementMode",
     "IdentityResolver",
     "InputMapper",
     "StrandsLifecyclePolicyHook",

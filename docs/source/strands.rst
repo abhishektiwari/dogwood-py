@@ -34,6 +34,36 @@ Before-events can block execution when Dogwood denies. After-events are
 observational by default because the work has already happened; use them to
 record outcomes into Dogwood temporal history or guide the next model step.
 
+Enforcement modes
+-----------------
+
+Dogwood Strands integrations use the SDK-level enforcement modes provided by
+:class:`dogwood.PolicyEnforcer`, following the common gateway rollout pattern:
+
+* ``mode="enforce"`` evaluates the Dogwood policy and enforces denials. This is
+  the default.
+* ``mode="log_only"`` evaluates the Dogwood policy and records what would have
+  happened, but proceeds without blocking the operation.
+
+Use log-only mode when introducing a new policy or validating its effect before
+turning on enforcement:
+
+.. code-block:: python
+
+   dogwood_policy = DogwoodIntervention(
+       policy_source=policy_source,
+       policy_schema_source=cedar_schema_source,
+       event_schema_source=event_schema_source,
+       mode="log_only",
+   )
+
+After every evaluated event, the integration records audit fields on the event:
+
+* ``event.dogwood_decision`` is the raw Dogwood decision, such as ``"Allow"``
+  or ``"Deny"``.
+* ``event.dogwood_enforcement_mode`` is ``"enforce"`` or ``"log_only"``.
+* ``event.dogwood_would_have_denied`` is ``True`` only when log-only mode saw a
+  denied decision.
 
 Intervention handler
 --------------------
