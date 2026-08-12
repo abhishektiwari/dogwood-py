@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable, Collection, Mapping
 from typing import Any
 
+from dogwood.enforcement import EnforcementMode, is_allowed_decision, is_enforced, normalize_mode
+
 InputMapper = Callable[[Any], dict[str, Any]]
 ActionResolver = Callable[[Any], str]
 IdentityResolver = Callable[[Any], str]
@@ -95,7 +97,21 @@ def _event_enabled(enabled: Collection[str] | str, lifecycle: str) -> bool:
 
 
 def _is_allowed(decision: Any) -> bool:
-    return decision == "Allow"
+    return is_allowed_decision(decision)
+
+
+def _is_enforced(mode: EnforcementMode) -> bool:
+    return is_enforced(mode)
+
+
+def _normalize_mode(mode: str) -> EnforcementMode:
+    return normalize_mode(mode)
+
+
+def _record_decision(event: Any, decision: Any, mode: EnforcementMode) -> None:
+    setattr(event, "dogwood_decision", str(decision))
+    setattr(event, "dogwood_enforcement_mode", mode)
+    setattr(event, "dogwood_would_have_denied", mode == "log_only" and not _is_allowed(decision))
 
 
 def _tool_use(event: Any) -> Any:
@@ -129,7 +145,7 @@ def _snake_lifecycle(value: str) -> str:
     return "".join(out).removesuffix("_event")
 
 
-def _resolve(value: str | IdentityResolver, event: Any) -> str:
+def _resolve(value: str | Callable[[Any], str], event: Any) -> str:
     if callable(value):
         return value(event)
     return value
@@ -137,6 +153,7 @@ def _resolve(value: str | IdentityResolver, event: Any) -> str:
 
 __all__ = [
     "ActionResolver",
+    "EnforcementMode",
     "IdentityResolver",
     "InputMapper",
     "ALL_LIFECYCLE_EVENTS",

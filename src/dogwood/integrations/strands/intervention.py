@@ -7,11 +7,15 @@ from typing import Any
 from dogwood import native
 from dogwood.integrations.strands.common import (
     ActionResolver,
+    EnforcementMode,
     IdentityResolver,
     InputMapper,
     _authorize_event,
     _event_enabled,
+    _is_enforced,
     _is_allowed,
+    _normalize_mode,
+    _record_decision,
     default_lifecycle_input,
     default_principal,
     default_resource,
@@ -107,6 +111,8 @@ class DogwoodIntervention(_StrandsInterventionHandler):
       events are mapped into Dogwood authorization requests.
     * ``action`` may be a fixed Cedar action string or a callback that resolves
       the action from a Strands event, which supports one action per tool.
+    * ``mode`` is ``"enforce"`` by default. ``"log_only"`` records the Dogwood
+      decision on the event and proceeds without blocking.
     * ``confirm_when`` turns Dogwood denials into Strands ``Confirm`` actions
       for selected tool calls.
     * ``lifecycle_events`` selects which lifecycle methods invoke Dogwood.
@@ -129,6 +135,7 @@ class DogwoodIntervention(_StrandsInterventionHandler):
         input_mapper: InputMapper = default_tool_input,
         lifecycle_input_mapper: InputMapper = default_lifecycle_input,
         lifecycle_events: tuple[str, ...] | str = DEFAULT_LIFECYCLE_EVENTS,
+        mode: EnforcementMode = "enforce",
         deny_message: str = "Dogwood policy denied this tool call.",
         confirm_when: ConfirmResolver = False,
         confirm_prompt: str = "Approve this Dogwood-controlled tool call?",
@@ -143,10 +150,12 @@ class DogwoodIntervention(_StrandsInterventionHandler):
             principal=principal,
             resource=resource,
             input_mapper=input_mapper,
+            mode=mode,
             deny_message=deny_message,
         )
         self.lifecycle_input_mapper = lifecycle_input_mapper
         self.lifecycle_events = lifecycle_events
+        self.mode = _normalize_mode(mode)
         self.confirm_when = confirm_when
         self.confirm_prompt = confirm_prompt
 
@@ -166,7 +175,7 @@ class DogwoodIntervention(_StrandsInterventionHandler):
         the configured ``input_mapper``.
         """
         decision = self._authorize_lifecycle("before_tool_call", event)
-        if decision is None or _is_allowed(decision):
+        if decision is None or _is_allowed(decision) or not _is_enforced(self.mode):
             return _proceed()
         confirm_prompt = _confirm_prompt(self.confirm_when, self.confirm_prompt, event)
         if confirm_prompt is not None:
@@ -186,13 +195,13 @@ class DogwoodIntervention(_StrandsInterventionHandler):
     def after_model_call(self, event: Any, **kwargs: Any) -> Any:
         """Observe a model response and optionally guide on Dogwood denial."""
         decision = self._authorize_lifecycle("after_model_call", event)
-        if decision is not None and not _is_allowed(decision):
+        if decision is not None and _is_enforced(self.mode) and not _is_allowed(decision):
             return _guide(self.policy_hook.deny_message)
         return _proceed()
 
     def _before_lifecycle(self, lifecycle: str, event: Any) -> Any:
         decision = self._authorize_lifecycle(lifecycle, event)
-        if decision is not None and not _is_allowed(decision):
+        if decision is not None and _is_enforced(self.mode) and not _is_allowed(decision):
             return _deny(self.policy_hook.deny_message)
         return _proceed()
 
@@ -201,8 +210,11 @@ class DogwoodIntervention(_StrandsInterventionHandler):
         if not _event_enabled(self.lifecycle_events, lifecycle):
             return None
         if lifecycle == "before_tool_call":
-            return _authorize_event(self.policy_hook, event)
-        return _authorize_event(_LifecyclePolicyView(self, self.lifecycle_input_mapper), event)
+            decision = _authorize_event(self.policy_hook, event)
+        else:
+            decision = _authorize_event(_LifecyclePolicyView(self, self.lifecycle_input_mapper), event)
+        _record_decision(event, decision, self.mode)
+        return decision
 
 
 @dataclass(frozen=True)
@@ -215,7 +227,7 @@ class _LifecyclePolicyView:
         return self.intervention.policy_hook.authorizer
 
     @property
-    def action(self) -> str:
+    def action(self) -> str | ActionResolver:
         return self.intervention.policy_hook.action
 
     @property

@@ -51,6 +51,38 @@ happens once:
 
    assert decision == "Allow"
 
+SDK enforcement modes
+---------------------
+
+Dogwood's Rust core evaluates policy and returns a policy decision. ``dogwood-py``
+adds SDK-level rollout behavior with :class:`dogwood.PolicyEnforcer`:
+
+* ``mode="enforce"`` treats Dogwood denials as effective denials. This is the
+  default.
+* ``mode="log_only"`` evaluates the policy but lets the operation continue,
+  while reporting that Dogwood would have denied it.
+
+.. code-block:: python
+
+   from dogwood import PolicyEnforcer, native
+
+   authorizer = native.NativeAuthorizer(policy_source, cedar_schema_source)
+   enforcer = PolicyEnforcer(authorizer, mode="log_only")
+
+   result = enforcer.authorize_request(
+       "Agent::Action::SellShares",
+       'Agent::OAuthUser::"alice"',
+       'Agent::Gateway::"trading"',
+       {"shares": 75, "stock": "AMZN"},
+   )
+
+   assert result.allowed is True
+   assert result.would_have_denied is True
+   assert result.decision == "Deny"
+
+Use ``log_only`` when introducing or tuning a policy. Switch to ``enforce``
+when a denied Dogwood decision should block the protected operation.
+
 Non-native fallback
 -------------------
 

@@ -1,5 +1,5 @@
-Getting Started With dogwood-py
-===============================
+Getting Started With ``dogwood-py``
+===================================
 
 .. meta::
    :description: Build your first Dogwood temporal authorization policy in Python with dogwood-py, Cedar schemas, Dogwood event schemas, native replay, and validation.

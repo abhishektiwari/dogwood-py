@@ -7,11 +7,15 @@ from dogwood import native
 from dogwood.integrations.strands.common import (
     ActionResolver,
     ALL_LIFECYCLE_EVENTS,
+    EnforcementMode,
     IdentityResolver,
     InputMapper,
     _authorize_event,
     _event_enabled,
+    _is_enforced,
     _is_allowed,
+    _normalize_mode,
+    _record_decision,
     default_lifecycle_input,
     default_principal,
     default_resource,
@@ -48,6 +52,7 @@ class StrandsPolicyHook:
     principal: str | IdentityResolver = default_principal
     resource: str | IdentityResolver = default_resource
     input_mapper: InputMapper = default_tool_input
+    mode: EnforcementMode = "enforce"
     deny_message: str = "Dogwood policy denied this tool call."
 
     def __call__(self, event: Any) -> None:
@@ -56,7 +61,10 @@ class StrandsPolicyHook:
         ``action`` may be a fixed Cedar action or a resolver callback that
         derives the action from the Strands tool event.
         """
-        if not _is_allowed(_authorize_event(self, event)):
+        decision = _authorize_event(self, event)
+        self.mode = _normalize_mode(self.mode)
+        _record_decision(event, decision, self.mode)
+        if _is_enforced(self.mode) and not _is_allowed(decision):
             event.cancel_tool = self.deny_message
 
 
@@ -80,6 +88,7 @@ class StrandsLifecyclePolicyHook:
     tool_input_mapper: InputMapper = default_tool_input
     lifecycle_input_mapper: InputMapper = default_lifecycle_input
     lifecycle_events: tuple[str, ...] | str = DEFAULT_LIFECYCLE_EVENTS
+    mode: EnforcementMode = "enforce"
     deny_message: str = "Dogwood policy denied this lifecycle event."
 
     def handle(self, lifecycle: str, event: Any) -> str:
@@ -88,7 +97,9 @@ class StrandsLifecyclePolicyHook:
         if not _event_enabled(self.lifecycle_events, lifecycle):
             return "Skipped"
         decision = _authorize_event(self._policy_view(lifecycle), event)
-        if not _is_allowed(decision) and lifecycle in _CANCEL_ATTRS:
+        self.mode = _normalize_mode(self.mode)
+        _record_decision(event, decision, self.mode)
+        if _is_enforced(self.mode) and not _is_allowed(decision) and lifecycle in _CANCEL_ATTRS:
             setattr(event, _CANCEL_ATTRS[lifecycle], self.deny_message)
         return str(decision)
 
@@ -121,6 +132,7 @@ def before_tool_call_hook(
     principal: str | IdentityResolver = default_principal,
     resource: str | IdentityResolver = default_resource,
     input_mapper: InputMapper = default_tool_input,
+    mode: EnforcementMode = "enforce",
     deny_message: str = "Dogwood policy denied this tool call.",
 ) -> StrandsPolicyHook:
     """Create a low-level ``BeforeToolCallEvent`` hook backed by Dogwood.
@@ -138,6 +150,7 @@ def before_tool_call_hook(
         principal=principal,
         resource=resource,
         input_mapper=input_mapper,
+        mode=mode,
         deny_message=deny_message,
     )
 
@@ -177,6 +190,7 @@ def lifecycle_hook(
     tool_input_mapper: InputMapper = default_tool_input,
     lifecycle_input_mapper: InputMapper = default_lifecycle_input,
     lifecycle_events: tuple[str, ...] | str = DEFAULT_LIFECYCLE_EVENTS,
+    mode: EnforcementMode = "enforce",
     deny_message: str = "Dogwood policy denied this lifecycle event.",
 ) -> StrandsLifecyclePolicyHook:
     """Create a lifecycle-aware Strands hook backed by Dogwood.
@@ -198,6 +212,7 @@ def lifecycle_hook(
         tool_input_mapper=tool_input_mapper,
         lifecycle_input_mapper=lifecycle_input_mapper,
         lifecycle_events=lifecycle_events,
+        mode=mode,
         deny_message=deny_message,
     )
 
@@ -213,6 +228,7 @@ def _build_policy_hook(
     resource: str | IdentityResolver,
     input_mapper: InputMapper,
     deny_message: str,
+    mode: EnforcementMode = "enforce",
 ) -> StrandsPolicyHook:
     if authorizer is None:
         if policy_source is None or policy_schema_source is None:
@@ -232,6 +248,7 @@ def _build_policy_hook(
         principal=principal,
         resource=resource,
         input_mapper=input_mapper,
+        mode=mode,
         deny_message=deny_message,
     )
 

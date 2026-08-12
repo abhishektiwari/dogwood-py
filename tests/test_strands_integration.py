@@ -73,6 +73,22 @@ def test_strands_policy_hook_denies_tool_call():
     assert event.cancel_tool == "Denied by Dogwood."
 
 
+def test_strands_policy_hook_log_only_records_denial_without_canceling():
+    event = SimpleNamespace(tool_use={"name": "delete_file", "input": {}})
+    hook = StrandsPolicyHook(
+        authorizer=FakeAuthorizer("Deny"),
+        mode="log_only",
+        deny_message="Denied by Dogwood.",
+    )
+
+    hook(event)
+
+    assert not hasattr(event, "cancel_tool")
+    assert event.dogwood_decision == "Deny"
+    assert event.dogwood_enforcement_mode == "log_only"
+    assert event.dogwood_would_have_denied is True
+
+
 def test_default_tool_input_handles_object_tool_use():
     event = SimpleNamespace(
         tool_use=SimpleNamespace(name="lookup", input={"id": "123"}, tool_use_id="abc")
@@ -147,6 +163,22 @@ def test_dogwood_intervention_returns_deny_for_denied_tool_call():
 
     assert decision.__class__.__name__.endswith("Deny")
     assert getattr(decision, "reason", None) == "Denied by Dogwood."
+
+
+def test_dogwood_intervention_log_only_returns_proceed_for_denied_tool_call():
+    intervention = DogwoodIntervention(
+        authorizer=FakeAuthorizer("Deny"),
+        mode="log_only",
+        deny_message="Denied by Dogwood.",
+    )
+    event = SimpleNamespace(tool_use={"name": "write_file", "input": {"path": "/tmp/x"}})
+
+    decision = intervention.before_tool_call(event)
+
+    assert decision.__class__.__name__.endswith("Proceed")
+    assert event.dogwood_decision == "Deny"
+    assert event.dogwood_enforcement_mode == "log_only"
+    assert event.dogwood_would_have_denied is True
 
 
 def test_dogwood_intervention_supports_before_invocation_lifecycle():
@@ -240,6 +272,21 @@ def test_dogwood_plugin_auto_hook_denies_tool_call():
     plugin.on_before_tool_call(event)
 
     assert event.cancel_tool == "Denied by Dogwood."
+
+
+def test_dogwood_plugin_log_only_does_not_cancel_tool_call():
+    plugin = DogwoodPlugin(
+        authorizer=FakeAuthorizer("Deny"),
+        mode="log_only",
+        deny_message="Denied by Dogwood.",
+    )
+    event = SimpleNamespace(tool_use={"name": "delete_file", "input": {}})
+
+    plugin.on_before_tool_call(event)
+
+    assert not hasattr(event, "cancel_tool")
+    assert event.dogwood_decision == "Deny"
+    assert event.dogwood_would_have_denied is True
 
 
 def test_lifecycle_policy_hook_supports_every_lifecycle_event():

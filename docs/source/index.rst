@@ -74,11 +74,20 @@ keeps a temporary pure-Python fallback only for source-tree examples that omit
 a full Cedar action schema. Schema-backed workflows require the native
 extension.
 
-dogwood-py also provides optional Strands Agents support. Dogwood policies can
+The SDK includes :class:`dogwood.PolicyEnforcer` with ``enforce`` and
+``log_only`` modes for rollout and audit behavior. Dogwood still evaluates the
+policy; the SDK mode controls whether a denied result blocks execution or is
+reported as ``would_have_denied``. See
+:mod:`dogwood.enforcement` for the API reference.
+
+``dogwood-py`` also provides optional Strands Agents support. Dogwood policies can
 be attached as Strands interventions so tool calls are checked before execution,
 with typed outcomes such as proceed, deny, guide, confirm, and transform. See
 :doc:`strands` for the integration API and
 :doc:`examples/strands-shopping-agent` for a runnable shopping-agent example.
+
+Strands integrations use the same SDK-level ``enforce`` and ``log_only`` modes
+on top of the Rust Dogwood policy decision.
 
 
 .. toctree::

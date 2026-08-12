@@ -6,6 +6,7 @@ from typing import Any
 from dogwood import native
 from dogwood.integrations.strands.common import (
     ActionResolver,
+    EnforcementMode,
     IdentityResolver,
     InputMapper,
     default_lifecycle_input,
@@ -83,6 +84,7 @@ class DogwoodPlugin(_StrandsPlugin):
         input_mapper: InputMapper = default_tool_input,
         lifecycle_input_mapper: InputMapper = default_lifecycle_input,
         lifecycle_events: tuple[str, ...] | str = DEFAULT_LIFECYCLE_EVENTS,
+        mode: EnforcementMode = "enforce",
         deny_message: str = "Dogwood policy denied this tool call.",
     ) -> None:
         super().__init__()
@@ -95,6 +97,7 @@ class DogwoodPlugin(_StrandsPlugin):
             principal=principal,
             resource=resource,
             input_mapper=input_mapper,
+            mode=mode,
             deny_message=deny_message,
         )
         self.lifecycle_hook = StrandsLifecyclePolicyHook(
@@ -105,6 +108,7 @@ class DogwoodPlugin(_StrandsPlugin):
             tool_input_mapper=input_mapper,
             lifecycle_input_mapper=lifecycle_input_mapper,
             lifecycle_events=lifecycle_events,
+            mode=mode,
             deny_message=deny_message,
         )
 

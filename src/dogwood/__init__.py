@@ -13,6 +13,12 @@ except ImportError:
 __author__ = "Abhishek Tiwari"
 
 from .errors import DogwoodError, ParseError, UnsupportedFeatureError, ValidationError
+from .enforcement import (
+    EnforcementMode,
+    EnforcementResult,
+    PolicyEnforcer,
+    apply_enforcement,
+)
 from .policy import (
     LoweredPolicySet,
     ParsedPolicy,
@@ -42,6 +48,8 @@ __all__ = [
     "DogwoodError",
     "DogwoodRuleRef",
     "Entity",
+    "EnforcementMode",
+    "EnforcementResult",
     "Event",
     "EventBuilder",
     "LoweredPolicySet",
@@ -49,6 +57,7 @@ __all__ = [
     "ParsedPolicy",
     "ParsedPolicySet",
     "PolicySchema",
+    "PolicyEnforcer",
     "Response",
     "ServiceSchema",
     "UnsupportedFeatureError",
@@ -58,6 +67,7 @@ __all__ = [
     "Value",
     "__author__",
     "__version__",
+    "apply_enforcement",
     "parse_trace",
     "replay_log",
 ]
